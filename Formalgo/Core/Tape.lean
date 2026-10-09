@@ -8,19 +8,19 @@ and can be used to represent arbitrary memory systems
 
 namespace Formalgo
 
-/-- A memory with a cell for each index. -/
-structure Tape (Index Value : Type*) where
-  /-- The value at a given cell index. -/
-  read : Index → Value
+/-- A memory with a cell for each address. -/
+structure Tape (Address Value : Type*) where
+  /-- The value at a given cell address. -/
+  read : Address → Value
 
 namespace Tape
 
-variable {Index Value : Type*}
+variable {Address Value : Type*}
 
 /-- Overwrite one cell. -/
-def write [DecidableEq Index] (tape : Tape Index Value) (index : Index) (value : Value) :
-    Tape Index Value :=
-  ⟨fun i => if i = index then value else tape.read i⟩
+def write [DecidableEq Address] (tape : Tape Address Value) (address : Address) (value : Value) :
+    Tape Address Value :=
+  ⟨fun i => if i = address then value else tape.read i⟩
 
 end Tape
 
