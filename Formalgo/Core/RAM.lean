@@ -38,7 +38,7 @@ structure RAM (Address Word : Type) (Extension : Type*) where
 namespace RAM
 
 /-- The instruction set implementation of `ram`.
-If a test has outcome `false', nothing changes.
+If a test has outcome `false`, nothing changes.
 All non-test outcomes are `true`. -/
 def instructionSet {Address Word : Type} {Extension : Type*} [DecidableEq Address]
     (ram : RAM Address Word Extension) :
