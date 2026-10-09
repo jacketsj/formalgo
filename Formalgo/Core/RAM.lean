@@ -60,6 +60,26 @@ abbrev Program {Address Word : Type} {Extension : Type*} [DecidableEq Address]
     (ram : RAM Address Word Extension) (PC : Type*) [Fintype PC] :=
   ram.instructionSet.Program PC
 
+/-! ### Arithmetic
+Generic extension templates for arithmetic operations, independent of Word type
+-/
+
+/-- Arithmetic instructions, with binary operations `Operation`. -/
+inductive Arithmetic (Address Operation : Type*) where
+  /-- `M[destination] := operation M[left] M[right]` -/
+  | apply (operation : Operation) (destination left right : Address)
+  /-- Test `M[left] = M[right]`. -/
+  | equal (left right : Address)
+
+/-- Arithmetic instructions with generic `eval` implementation. -/
+def arithmetic {Address Word Operation : Type*} [DecidableEq Address] [DecidableEq Word]
+    (eval : Operation → Word → Word → Word) :
+    InstructionSet (Arithmetic Address Operation) Bool Address Word where
+  exec instruction memory := match instruction with
+    | .apply operation destination left right =>
+      (some true, memory.write destination (eval operation (memory.read left) (memory.read right)))
+    | .equal left right => (some (memory.read left = memory.read right), memory)
+
 end RAM
 
 end Formalgo
