@@ -8,11 +8,11 @@ This is equivalent to a semiautomaton.
 
 namespace Formalgo
 
-/-- Control flow: finitely many states, and transitions on finitely many outcomes. -/
-structure ControlFlow (State Outcome : Type*) [Fintype State] [Fintype Outcome] where
-  /-- Initial state. -/
-  init : State
-  /-- The next state, given the outcome of the current step. This encodes branching. -/
-  next : State → Outcome → State
+/-- Control flow: program counter (PC) values, and transitions based on outcomes. -/
+structure ControlFlow (PC Outcome : Type*) [Fintype PC] [Fintype Outcome] where
+  /-- Initial PC value. -/
+  init : PC
+  /-- The next PC value, given the outcome of the current step. This encodes branching. -/
+  next : PC → Outcome → PC
 
 end Formalgo
