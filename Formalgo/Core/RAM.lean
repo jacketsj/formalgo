@@ -28,21 +28,21 @@ inductive RAM.Instruction (Address Word : Type) (Extension : Type*) where
 
 /-! ### RAMs -/
 
-/-- A RAM: which words are addresses, and the extended instruction set. -/
+/-- A RAM: which words are addresses, and the semantics of its additional instructions. -/
 structure RAM (Address Word : Type) (Extension : Type*) where
   /-- The address a word denotes, if any. -/
   toAddress? : Word → Option Address
   /-- The additional instructions. -/
-  extension : InstructionSet Extension Bool Address Word
+  extension : Semantics Extension Bool Address Word
 
 namespace RAM
 
-/-- The instruction set implementation of `ram`.
+/-- The semantics of `ram`.
 If a test has outcome `false`, nothing changes.
 All non-test outcomes are `true`. -/
-def instructionSet {Address Word : Type} {Extension : Type*} [DecidableEq Address]
+def semantics {Address Word : Type} {Extension : Type*} [DecidableEq Address]
     (ram : RAM Address Word Extension) :
-    InstructionSet (Instruction Address Word Extension) Bool Address Word where
+    Semantics (Instruction Address Word Extension) Bool Address Word where
   exec instruction memory := match instruction with
     | .const destination value => (some true, memory.write destination value)
     | .copy destination source => (some true, memory.write destination (memory.read source))
@@ -55,10 +55,10 @@ def instructionSet {Address Word : Type} {Extension : Type*} [DecidableEq Addres
     | .halt => (none, memory)
     | .extension instruction => ram.extension.exec instruction memory
 
-/-- Macro for `ram` program. -/
-abbrev Program {Address Word : Type} {Extension : Type*} [DecidableEq Address]
-    (ram : RAM Address Word Extension) (PC : Type*) [Fintype PC] :=
-  ram.instructionSet.Program PC
+/-- Macro for programs of a given RAM specialization. -/
+abbrev Program {Address Word : Type} {Extension : Type*} (_ : RAM Address Word Extension)
+    (PC : Type*) [Fintype PC] :=
+  Formalgo.Program PC (Instruction Address Word Extension) Bool
 
 /-! ### Arithmetic
 Generic extension templates for arithmetic operations, independent of Word type
@@ -74,7 +74,7 @@ inductive Arithmetic (Address Operation : Type*) where
 /-- Arithmetic instructions with generic `eval` implementation. -/
 def arithmetic {Address Word Operation : Type*} [DecidableEq Address] [DecidableEq Word]
     (eval : Operation → Word → Word → Word) :
-    InstructionSet (Arithmetic Address Operation) Bool Address Word where
+    Semantics (Arithmetic Address Operation) Bool Address Word where
   exec instruction memory := match instruction with
     | .apply operation destination left right =>
       (some true, memory.write destination (eval operation (memory.read left) (memory.read right)))
