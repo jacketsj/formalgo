@@ -1,4 +1,5 @@
 import Formalgo.Core.Program
+import Formalgo.Core.Semantics
 
 /-!
 # Generic random-access machine (RAM)
