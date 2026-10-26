@@ -7,3 +7,4 @@ import Formalgo.Core.RAM
 import Formalgo.Core.IntegerRAM
 import Formalgo.Core.IOSpec
 import Formalgo.Core.Algorithm
+import Formalgo.Core.Code

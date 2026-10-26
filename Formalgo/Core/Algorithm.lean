@@ -3,7 +3,7 @@ import Formalgo.Core.Run
 
 /-!
 # Algorithms
-A program, and an encoding of inputs and outputs on the tape.
+A program, and a tape coding of inputs and outputs on the tape.
 Semantics are given separately, so an algorithm can be run with different ones (e.g. word sizes).
 Time and space bounds (per-input) are also defined
 -/
@@ -11,19 +11,19 @@ Time and space bounds (per-input) are also defined
 namespace Formalgo
 
 /-- How inputs are written to a tape, and how outputs are read from it. -/
-structure Encoding (Input Output Address Value : Type*) where
+structure TapeCoding (Input Output Address Value : Type*) where
   /-- The tape holding an input. -/
   encode : Input → Tape Address Value
   /-- The output held by a tape. Note that the tape could also contain other things. -/
   decode : Tape Address Value → Output
 
-/-- An algorithm: a program, and an encoding of inputs and outputs. -/
+/-- An algorithm: a program, and a tape coding of inputs and outputs. -/
 structure Algorithm (PC Instruction Outcome Address Value Input Output : Type*) [Fintype PC]
     [Fintype Outcome] where
   /-- The program. -/
   program : Program PC Instruction Outcome
-  /-- The encoding of inputs and outputs. -/
-  encoding : Encoding Input Output Address Value
+  /-- The tape coding of inputs and outputs. -/
+  tapeCoding : TapeCoding Input Output Address Value
 
 namespace Algorithm
 
@@ -32,7 +32,8 @@ def run {PC Instruction Outcome Address Value Input Output : Type*} [Fintype PC]
     (algorithm : Algorithm PC Instruction Outcome Address Value Input Output)
     (semantics : Semantics Instruction Outcome Address Value) (input : Input) (steps : ℕ) :
     Status (Program.State PC Address Value) :=
-  algorithm.program.run semantics steps ⟨algorithm.program.init, algorithm.encoding.encode input⟩
+  algorithm.program.run semantics steps
+    ⟨algorithm.program.init, algorithm.tapeCoding.encode input⟩
 
 /-- `algorithm` with `semantics` halts on `input` with `output`. -/
 def Outputs {PC Instruction Outcome Address Value Input Output : Type*} [Fintype PC]
@@ -40,7 +41,7 @@ def Outputs {PC Instruction Outcome Address Value Input Output : Type*} [Fintype
     (semantics : Semantics Instruction Outcome Address Value) (input : Input) (output : Output) :
     Prop :=
   ∃ steps state, algorithm.run semantics input steps = .halted state ∧
-    algorithm.encoding.decode state.tape = output
+    algorithm.tapeCoding.decode state.tape = output
 
 /-- On every input, `algorithm` with `semantics` halts with a valid output. -/
 def Solves {PC Instruction Outcome Address Value Input Output : Type*} [Fintype PC]
