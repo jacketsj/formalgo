@@ -5,6 +5,7 @@ import Formalgo.Core.Program
 import Formalgo.Core.Run
 import Formalgo.Core.RAM
 import Formalgo.Core.IntegerRAM
+import Formalgo.Core.WordRAM
 import Formalgo.Core.IOSpec
 import Formalgo.Core.Algorithm
 import Formalgo.Core.Code
