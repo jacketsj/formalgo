@@ -29,12 +29,11 @@ inductive WordRAM.Operation where
   /-- Shift the left word toward its low bits by the right word, filling with `0`s. -/
   | shiftRight
 
-/-- Word RAM with words of `w` bits. -/
-def wordRAM (w : ℕ) {Address : Type} [DecidableEq Address] (toAddress? : BitVec w → Option Address)
-    (operations : List WordRAM.Operation) :
-    RAM (Address := Address) (Word := BitVec w)
-      (Extension := RAM.Arithmetic Address {operation // operation ∈ operations}) where
-  toAddress? := toAddress?
+/-- Word RAM with words of `w` bits, which are also its addresses. -/
+def wordRAM (w : ℕ) (operations : List WordRAM.Operation) :
+    RAM (Address := BitVec w) (Word := BitVec w)
+      (Extension := RAM.Arithmetic (BitVec w) {operation // operation ∈ operations}) where
+  toAddress? word := some word
   extension := RAM.arithmetic fun
     | ⟨.add, _⟩ => (· + ·)
     | ⟨.sub, _⟩ => (· - ·)
@@ -49,9 +48,7 @@ def wordRAM (w : ℕ) {Address : Type} [DecidableEq Address] (toAddress? : BitVe
     | ⟨.shiftRight, _⟩ => (· >>> ·)
 
 /-- Word RAM with every operation. -/
-def WordRAM.standard (w : ℕ) {Address : Type} [DecidableEq Address]
-    (toAddress? : BitVec w → Option Address) :=
-  wordRAM w toAddress?
-    [.add, .sub, .mul, .div, .mod, .less, .and, .or, .xor, .shiftLeft, .shiftRight]
+def WordRAM.standard (w : ℕ) :=
+  wordRAM w [.add, .sub, .mul, .div, .mod, .less, .and, .or, .xor, .shiftLeft, .shiftRight]
 
 end Formalgo
