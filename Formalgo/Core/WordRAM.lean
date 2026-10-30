@@ -29,7 +29,7 @@ inductive WordRAM.Operation where
   /-- Shift the left word toward its low bits by the right word, filling with `0`s. -/
   | shiftRight
 
-/-- Word RAM with words of `w` bits, which are also its addresses. -/
+/-- Word RAM with words of `w` bits. -/
 def wordRAM (w : ℕ) (operations : List WordRAM.Operation) :
     RAM (Address := BitVec w) (Word := BitVec w)
       (Extension := RAM.Arithmetic (BitVec w) {operation // operation ∈ operations}) where
