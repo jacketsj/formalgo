@@ -6,6 +6,8 @@ import Formalgo.Core.Run
 import Formalgo.Core.RAM
 import Formalgo.Core.IntegerRAM
 import Formalgo.Core.WordRAM
+import Formalgo.Core.TDWordRAM
+import Formalgo.Core.TDAlgorithm
 import Formalgo.Core.IOSpec
 import Formalgo.Core.Runnable
 import Formalgo.Core.Algorithm

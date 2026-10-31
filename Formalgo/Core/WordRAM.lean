@@ -1,3 +1,4 @@
+import Formalgo.Core.Code
 import Formalgo.Core.RAM
 
 /-!
@@ -46,6 +47,14 @@ def wordRAM (w : ℕ) (operations : List WordRAM.Operation) :
     | ⟨.xor, _⟩ => (· ^^^ ·)
     | ⟨.shiftLeft, _⟩ => (· <<< ·)
     | ⟨.shiftRight, _⟩ => (· >>> ·)
+
+/-- A natural number is written in base `2 ^ w`, with each digit and marker as a word. -/
+noncomputable instance WordRAM.code (w : ℕ) : Code ℕ (BitVec w) :=
+  letI : Code Bool (BitVec w) := ⟨fun bit => [if bit then 1 else 0], fun stream =>
+    (stream 0 != 0, fun i => stream (i + 1))⟩
+  letI : Code (Fin (2 ^ w)) (BitVec w) := ⟨fun digit => [.ofFin digit], fun stream =>
+    ((stream 0).toFin, fun i => stream (i + 1))⟩
+  Code.digits (2 ^ w)
 
 /-- Word RAM with every operation. -/
 def WordRAM.standard (w : ℕ) :=

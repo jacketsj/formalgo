@@ -27,6 +27,17 @@ inductive RAM.Instruction (Address Word : Type) (Extension : Type*) where
   /-- An additional instruction (for instantiations of generic RAM). -/
   | extension (instruction : Extension)
 
+/-- Map the addresses, words and additional instructions of an instruction. -/
+def RAM.Instruction.map {Address Address' Word Word' : Type} {Extension Extension' : Type*}
+    (address : Address → Address') (word : Word → Word') (extension : Extension → Extension') :
+    RAM.Instruction Address Word Extension → RAM.Instruction Address' Word' Extension'
+  | .const destination value => .const (address destination) (word value)
+  | .copy destination source => .copy (address destination) (address source)
+  | .load destination pointer => .load (address destination) (address pointer)
+  | .store pointer source => .store (address pointer) (address source)
+  | .halt => .halt
+  | .extension instruction => .extension (extension instruction)
+
 /-! ### RAMs -/
 
 /-- A RAM: which words are addresses, and the semantics of its additional instructions. -/
@@ -71,6 +82,13 @@ inductive Arithmetic (Address Operation : Type*) where
   | apply (operation : Operation) (destination left right : Address)
   /-- Test `M[left] = M[right]`. -/
   | equal (left right : Address)
+
+/-- Map the addresses of an arithmetic instruction. -/
+def Arithmetic.map {Address Address' Operation : Type*} (address : Address → Address') :
+    Arithmetic Address Operation → Arithmetic Address' Operation
+  | .apply operation destination left right =>
+    .apply operation (address destination) (address left) (address right)
+  | .equal left right => .equal (address left) (address right)
 
 /-- Arithmetic instructions with generic `eval` implementation. -/
 def arithmetic {Address Word Operation : Type*} [DecidableEq Address] [DecidableEq Word]

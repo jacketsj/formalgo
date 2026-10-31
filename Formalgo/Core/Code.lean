@@ -48,22 +48,31 @@ instance list [Code ℕ Value] [Code α Value] : Code (List α) Value where
     let (n, stream) : ℕ × _ := decode stream
     decodeMany n stream
 
-/-- A natural number is written in binary, least significant digit first, on any tape with a code
-for bits. Each digit is preceded by `true`, meaning "a digit follows", and the end by `false`. -/
-noncomputable instance (priority := low) nat [Code Bool Value] : Code ℕ Value where
-  encode n := ((List.range (Nat.log 2 n + 1)).flatMap
-    fun i => encode true ++ encode (n.testBit i)) ++ encode false
+/-- A natural number is written in base `base`, least significant digit first. Each digit is
+preceded by `true`, meaning "a digit follows", and the end by `false`. -/
+@[reducible] noncomputable def digits (base : ℕ) [NeZero base] [Code Bool Value]
+    [Code (Fin base) Value] : Code ℕ Value where
+  encode n := ((List.range (Nat.log base n + 1)).flatMap
+    fun i => encode true ++ encode (Fin.ofNat base (n / base ^ i))) ++ encode false
   decode stream :=
     -- The first `k` digits, each with the `true` before it, and the stream after them.
-    let digits (k : ℕ) := decodeMany (α := Bool × Bool) k stream
+    let digits (k : ℕ) := decodeMany (α := Bool × Fin base) k stream
     -- Whether another digit follows the first `k`.
     let follows (k : ℕ) : Bool := (decode (α := Bool) (digits k).2).1
     -- The number of digits: the first `k` not followed by another digit.
     let count := open Classical in if h : ∃ k, follows k = false then Nat.find h else 0
     let (pairs, rest) := digits count
-    let n := (pairs.map (·.2)).foldr (fun digit n => 2 * n + digit.toNat) 0
+    let n := (pairs.map (·.2)).foldr (fun digit n => base * n + digit) 0
     -- Skip the final `false`.
     (n, (decode (α := Bool) rest).2)
+
+/-- A natural number is written in binary, on any tape with a code for bits. -/
+noncomputable instance (priority := low) nat [Code Bool Value] : Code ℕ Value :=
+  letI : Code (Fin 2) Value :=
+    ⟨fun digit => encode (digit = 1 : Bool), fun stream =>
+      let (bit, stream) : Bool × _ := decode stream
+      (if bit then 1 else 0, stream)⟩
+  digits 2
 
 /-- `nat`, specialized to integer tapes: a natural number is written as a single integer. -/
 instance singleIntCell : Code ℕ ℤ where
@@ -73,10 +82,12 @@ instance singleIntCell : Code ℕ ℤ where
 end Code
 
 /-- The standard tape coding: the input is written from cell `0`, followed by blanks (`default`),
-and the output is read from just after the input -/
-def TapeCoding.standard {Input Output Value : Type*} [Code Input Value] [Code Output Value]
-    [Inhabited Value] : TapeCoding Input Output ℕ Value where
-  encode input := ⟨fun i => (Code.encode input).getD i default⟩
-  decode tape := (Code.decode (Code.decode (α := Input) tape.read).2).1
+and the output is read from just after the input. -/
+def TapeCoding.standard {Input Output Address Value : Type*} [Code Input Value] [Code Output Value]
+    [NatCast Address] [DecidableEq Address] [Inhabited Value] :
+    TapeCoding Input Output Address Value where
+  encode input := (Code.encode input).zipIdx.foldr (fun (value, i) tape => tape.write i value)
+    ⟨fun _ => default⟩
+  decode tape := (Code.decode (Code.decode (α := Input) fun i => tape.read i).2).1
 
 end Formalgo

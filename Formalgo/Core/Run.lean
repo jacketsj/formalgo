@@ -22,6 +22,11 @@ inductive Status (State : Type*) where
   /-- The computation completed in `state`. -/
   | halted (state : State)
 
+/-- Map the state of a status. -/
+def Status.map {State State' : Type*} (f : State → State') : Status State → Status State'
+  | .running state => .running (f state)
+  | .halted state => .halted (f state)
+
 /-- Execute one instruction of `program` with `semantics`. -/
 def Program.step {PC Instruction Outcome Address Value : Type*} [Fintype PC] [Fintype Outcome]
     (program : Program PC Instruction Outcome)
