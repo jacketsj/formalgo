@@ -211,6 +211,42 @@ theorem outputs_of_exec (c : Cmd) {W scale : ℕ} (hsmall : Small W c.lines) (x 
   rw [hT', BitVec.toNat_ofNat, Nat.mod_eq_of_lt (by omega), hout i hi', List.getElem_of_eq heq,
     triples_getElem hw hall]
 
+/-- `outputs_of_exec`, with the word size named. -/
+theorem outputs_of_exec' (c : Cmd) {W scale : ℕ} (hsmall : Small W c.lines) (x : Input)
+    (y : Output) (hx : Layout x) (hxs : Skips x) (hy : Layout y) (hyr : ReadsBack y) {w : ℕ}
+    (hwdef : (cmdAlgorithm Input Output c W scale).wordSize x = w) (hw : 0 < w)
+    (hfit : Fits w x) (hfity : Fits w y)
+    (hlen : 3 * ((ncode (w, x)).length + (ncode y).length) ≤ 2 ^ w) {k : ℕ} {m' : Mem}
+    (hE : Exec (2 ^ w) c (initMem w x) k m')
+    (hout : ∀ i < 3 * ((ncode (w, x)).length + (ncode y).length),
+      m' i = (tripleNat (ncode (w, x) ++ ncode y)).getD i 0) :
+    Outputs (cmdAlgorithm Input Output c W scale) (tdWordRAM ops) x y ∧
+      HaltsWithin (cmdAlgorithm Input Output c W scale) (tdWordRAM ops) x (k + 1) := by
+  subst hwdef
+  exact outputs_of_exec c hsmall x y hx hxs hy hyr hw hfit hfity hlen hE hout
+
+theorem map_halted {α β : Type*} {f : α → β} {s : Status α} {b : β} (h : s.map f = .halted b) :
+    ∃ a, s = .halted a := by
+  cases s with
+  | running a => simp [Status.map] at h
+  | halted a => exact ⟨a, rfl⟩
+
+theorem status_halted_mono {PC I A V In Out : Type*} [Fintype PC]
+    {alg : Algorithm PC I Bool A V In Out} {sem : Semantics I Bool A V} {x : In} {a b : ℕ}
+    {st : Program.State PC A V} (h : (Runnable.run alg sem).status x a = .halted st)
+    (hab : a ≤ b) : (Runnable.run alg sem).status x b = .halted st :=
+  run_halted_of_le (program := alg.program) (semantics := sem) h hab
+
+theorem haltsWithin_mono (c : Cmd) {W scale : ℕ} {x : Input} {a b : ℕ}
+    (h : HaltsWithin (cmdAlgorithm Input Output c W scale) (tdWordRAM ops) x a) (hab : a ≤ b) :
+    HaltsWithin (cmdAlgorithm Input Output c W scale) (tdWordRAM ops) x b := by
+  obtain ⟨st, hst⟩ := h
+  obtain ⟨st', hst'⟩ := map_halted hst
+  refine ⟨⟨_, st'⟩, ?_⟩
+  show Status.map _ ((Runnable.run _ _).status _ b) = _
+  rw [status_halted_mono hst' hab]
+  rfl
+
 end Glue
 
 end Formalgo.LLMUnchecked
