@@ -12,3 +12,6 @@ import Formalgo.Core.IOSpec
 import Formalgo.Core.Runnable
 import Formalgo.Core.Algorithm
 import Formalgo.Core.Code
+import Formalgo.Core.Graph
+import Formalgo.Algorithms.Sorting.Statement
+import Formalgo.Algorithms.ShortestPaths.Statement
