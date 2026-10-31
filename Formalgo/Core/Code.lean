@@ -73,10 +73,12 @@ instance singleIntCell : Code ℕ ℤ where
 end Code
 
 /-- The standard tape coding: the input is written from cell `0`, followed by blanks (`default`),
-and the output is read from just after the input -/
-def TapeCoding.standard {Input Output Value : Type*} [Code Input Value] [Code Output Value]
-    [Inhabited Value] : TapeCoding Input Output ℕ Value where
-  encode input := ⟨fun i => (Code.encode input).getD i default⟩
-  decode tape := (Code.decode (Code.decode (α := Input) tape.read).2).1
+and the output is read from just after the input. -/
+def TapeCoding.standard {Input Output Address Value : Type*} [Code Input Value] [Code Output Value]
+    [NatCast Address] [DecidableEq Address] [Inhabited Value] :
+    TapeCoding Input Output Address Value where
+  encode input := (Code.encode input).zipIdx.foldr (fun (value, i) tape => tape.write i value)
+    ⟨fun _ => default⟩
+  decode tape := (Code.decode (Code.decode (α := Input) fun i => tape.read i).2).1
 
 end Formalgo

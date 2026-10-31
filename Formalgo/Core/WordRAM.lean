@@ -1,3 +1,4 @@
+import Formalgo.Core.Code
 import Formalgo.Core.RAM
 
 /-!
@@ -46,6 +47,11 @@ def wordRAM (w : ℕ) (operations : List WordRAM.Operation) :
     | ⟨.xor, _⟩ => (· ^^^ ·)
     | ⟨.shiftLeft, _⟩ => (· <<< ·)
     | ⟨.shiftRight, _⟩ => (· >>> ·)
+
+/-- A natural number is written as a single word. -/
+instance WordRAM.code (w : ℕ) : Code ℕ (BitVec w) where
+  encode n := [.ofNat w n]
+  decode stream := ((stream 0).toNat, fun i => stream (i + 1))
 
 /-- Word RAM with every operation. -/
 def WordRAM.standard (w : ℕ) :=
