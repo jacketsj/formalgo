@@ -52,14 +52,13 @@ instance : Runnable (TDAlgorithm Instruction PC Input Output) (TDMachine Instruc
 
 end TDAlgorithm
 
-/-- Some TD algorithm solves `spec` within `time n` steps on inputs of size `n`. -/
+/-- Some TD algorithm solves `spec` within `time input` steps on each input. -/
 def TDMachine.SolvableWithin {Instruction Address Value : ℕ → Type*} {Input Output : Type*}
     [Code Input ℕ] [∀ w, NatCast (Address w)] [∀ w, DecidableEq (Address w)]
     [∀ w, Inhabited (Value w)] [∀ w, Code ℕ (Value w)] [∀ w, Code Input (Value w)]
     [∀ w, Code Output (Value w)] (machine : TDMachine Instruction Address Value)
-    (spec : IOSpec Input Output) (time : ℕ → ℕ) : Prop :=
+    (spec : IOSpec Input Output) (time : Input → ℕ) : Prop :=
   ∃ (PC : Type) (_ : Fintype PC) (algorithm : TDAlgorithm Instruction PC Input Output),
-    Solves algorithm machine spec ∧
-      ∀ input, HaltsWithin algorithm machine input (time (Code.encode input : List ℕ).length)
+    Solves algorithm machine spec ∧ ∀ input, HaltsWithin algorithm machine input (time input)
 
 end Formalgo
