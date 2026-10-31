@@ -20,14 +20,12 @@ class Runnable (A Machine : Type*) (Input Output State : outParam Type*) where
   /-- The execution trace of `algorithm` with `machine`. -/
   run (algorithm : A) (machine : Machine) : ExecutionTrace Input Output State
 
-export Runnable (run)
-
 variable {A Machine Input Output State : Type*} [Runnable A Machine Input Output State]
 
 /-- `algorithm` with `machine` halts on `input` with `output`. -/
 def Outputs (algorithm : A) (machine : Machine) (input : Input) (output : Output) : Prop :=
-  ∃ steps state, (run algorithm machine).status input steps = .halted state ∧
-    (run algorithm machine).output state = output
+  ∃ steps state, (Runnable.run algorithm machine).status input steps = .halted state ∧
+    (Runnable.run algorithm machine).output state = output
 
 /-- `algorithm` with `machine` halts on every input with a valid output. -/
 def Solves (algorithm : A) (machine : Machine) (spec : IOSpec Input Output) : Prop :=
@@ -35,12 +33,12 @@ def Solves (algorithm : A) (machine : Machine) (spec : IOSpec Input Output) : Pr
 
 /-- `algorithm` with `machine` halts on `input` within `steps` steps. -/
 def HaltsWithin (algorithm : A) (machine : Machine) (input : Input) (steps : ℕ) : Prop :=
-  ∃ state, (run algorithm machine).status input steps = .halted state
+  ∃ state, (Runnable.run algorithm machine).status input steps = .halted state
 
 /-- Every state of `algorithm` with `machine` on `input` has `size` at most `bound`. -/
 def SpaceWithin (algorithm : A) (machine : Machine) (size : State → ℕ) (input : Input)
     (bound : ℕ) : Prop :=
-  ∀ steps, match (run algorithm machine).status input steps with
+  ∀ steps, match (Runnable.run algorithm machine).status input steps with
     | .running state | .halted state => size state ≤ bound
 
 end Formalgo
