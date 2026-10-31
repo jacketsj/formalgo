@@ -252,7 +252,131 @@ theorem vwrite {S va src : ℕ} (hR : Regs S m) (hva : va < nK) (hvaT : va ≠ r
   obtain ⟨m', k, e, hk, hR', hvm, hfr⟩ := exec_vwrite hR hva hvaT hsrcK hsrc hKS hB hdst
   exact ⟨m', k, e, h m' k hk hR' hvm hfr⟩
 
+/-! Register commands, with the new memory kept abstract. -/
+
+theorem constR {d v : ℕ} (hd : d < B) (hv : v < B)
+    (h : ∀ m', m' d = v → (∀ a, a ≠ d → m' a = m a) → Q m' 1) : Runs B (.const d v) m Q :=
+  const hd hv (h _ (by simp) fun a ha => by simp [update_apply, ha])
+
+theorem copyR {d s : ℕ} (hd : d < B) (hs : s < B)
+    (h : ∀ m', m' d = m s → (∀ a, a ≠ d → m' a = m a) → Q m' 1) : Runs B (.copy d s) m Q :=
+  copy hd hs (h _ (by simp) fun a ha => by simp [update_apply, ha])
+
+theorem loadR {d p : ℕ} (hd : d < B) (hp : p < B)
+    (h : ∀ m', m' d = m (m p) → (∀ a, a ≠ d → m' a = m a) → Q m' 1) : Runs B (.load d p) m Q :=
+  load hd hp (h _ (by simp) fun a ha => by simp [update_apply, ha])
+
+theorem storeR {p s : ℕ} (hp : p < B) (hs : s < B)
+    (h : ∀ m', m' (m p) = m s → (∀ a, a ≠ m p → m' a = m a) → Q m' 1) :
+    Runs B (.store p s) m Q :=
+  store hp hs (h _ (by simp) fun a ha => by simp [update_apply, ha])
+
+theorem addR {d l r : ℕ} (hd : d < B) (hl : l < B) (hr : r < B) (hlr : m l + m r < B)
+    (h : ∀ m', m' d = m l + m r → (∀ a, a ≠ d → m' a = m a) → Q m' 1) :
+    Runs B (.add d l r) m Q :=
+  add hd hl hr hlr (h _ (by simp) fun a ha => by simp [update_apply, ha])
+
+theorem subR {d l r : ℕ} (hd : d < B) (hl : l < B) (hr : r < B) (hlr : m r ≤ m l)
+    (h : ∀ m', m' d = m l - m r → (∀ a, a ≠ d → m' a = m a) → Q m' 1) :
+    Runs B (.sub d l r) m Q :=
+  sub hd hl hr hlr (h _ (by simp) fun a ha => by simp [update_apply, ha])
+
+theorem lessR {d l r : ℕ} (hd : d < B) (hl : l < B) (hr : r < B)
+    (h : ∀ m', m' d = (if m l < m r then 1 else 0) → (∀ a, a ≠ d → m' a = m a) → Q m' 1) :
+    Runs B (.less d l r) m Q :=
+  less hd hl hr (h _ (by simp) fun a ha => by simp [update_apply, ha])
+
+theorem seqs_nilR (hB : 2 < B) (h : ∀ m', m' 2 = 0 → (∀ a, a ≠ 2 → m' a = m a) → Q m' 1) :
+    Runs B (seqs []) m Q :=
+  seqs_nil hB (h _ (by simp) fun a ha => by simp [update_apply, ha])
+
 end Runs
+
+theorem vm_of_reg {S d : ℕ} {m m' : Mem} (hd : d < nK) (hKS : nK ≤ S)
+    (h : ∀ a, a ≠ d → m' a = m a) : vm S m' = vm S m := by
+  funext a; simp only [vm]; split_ifs <;> first | rfl | exact h _ (by omega)
+
+theorem Regs.of_reg {S d : ℕ} {m m' : Mem} (hR : Regs S m) (hd : d ≠ rS ∧ d ≠ rOne ∧ d ≠ rK)
+    (h : ∀ a, a ≠ d → m' a = m a) : Regs S m' := by
+  obtain ⟨a, b, c⟩ := hR
+  exact ⟨by rw [h _ (by omega), a], by rw [h _ (by omega), b], by rw [h _ (by omega), c]⟩
+
+theorem vm_of_store {S p v : ℕ} {m m' : Mem} (hp : nK ≤ p) (hpS : p < S ∨ S + nK ≤ p)
+    (hv : m' p = v) (h : ∀ a, a ≠ p → m' a = m a) : vm S m' = update (vm S m) p v := by
+  have : m' = update m p v := by
+    funext a; by_cases ha : a = p
+    · subst ha; simp [hv]
+    · simp [update_apply, ha, h a ha]
+  rw [this, vm_update_high hp hpS]
+
+namespace Runs
+
+variable {B : ℕ} {m : Mem} {Q : Mem → ℕ → Prop}
+
+/-! Register commands, also keeping `vm`. -/
+
+theorem constV {S d v : ℕ} (hKS : nK ≤ S) (hdK : d < nK) (hd : d < B) (hv : v < B)
+    (h : ∀ m', m' d = v → (∀ a, a ≠ d → m' a = m a) → vm S m' = vm S m → Q m' 1) :
+    Runs B (.const d v) m Q :=
+  constR hd hv fun m' h₁ h₂ => h m' h₁ h₂ (vm_of_reg hdK hKS h₂)
+
+theorem copyV {S d s : ℕ} (hKS : nK ≤ S) (hdK : d < nK) (hd : d < B) (hs : s < B)
+    (h : ∀ m', m' d = m s → (∀ a, a ≠ d → m' a = m a) → vm S m' = vm S m → Q m' 1) :
+    Runs B (.copy d s) m Q :=
+  copyR hd hs fun m' h₁ h₂ => h m' h₁ h₂ (vm_of_reg hdK hKS h₂)
+
+theorem loadV {S d p : ℕ} (hKS : nK ≤ S) (hdK : d < nK) (hd : d < B) (hp : p < B)
+    (h : ∀ m', m' d = m (m p) → (∀ a, a ≠ d → m' a = m a) → vm S m' = vm S m → Q m' 1) :
+    Runs B (.load d p) m Q :=
+  loadR hd hp fun m' h₁ h₂ => h m' h₁ h₂ (vm_of_reg hdK hKS h₂)
+
+theorem addV {S d l r : ℕ} (hKS : nK ≤ S) (hdK : d < nK) (hd : d < B) (hl : l < B) (hr : r < B)
+    (hlr : m l + m r < B)
+    (h : ∀ m', m' d = m l + m r → (∀ a, a ≠ d → m' a = m a) → vm S m' = vm S m → Q m' 1) :
+    Runs B (.add d l r) m Q :=
+  addR hd hl hr hlr fun m' h₁ h₂ => h m' h₁ h₂ (vm_of_reg hdK hKS h₂)
+
+theorem subV {S d l r : ℕ} (hKS : nK ≤ S) (hdK : d < nK) (hd : d < B) (hl : l < B) (hr : r < B)
+    (hlr : m r ≤ m l)
+    (h : ∀ m', m' d = m l - m r → (∀ a, a ≠ d → m' a = m a) → vm S m' = vm S m → Q m' 1) :
+    Runs B (.sub d l r) m Q :=
+  subR hd hl hr hlr fun m' h₁ h₂ => h m' h₁ h₂ (vm_of_reg hdK hKS h₂)
+
+theorem lessV {S d l r : ℕ} (hKS : nK ≤ S) (hdK : d < nK) (hd : d < B) (hl : l < B)
+    (hr : r < B)
+    (h : ∀ m', m' d = (if m l < m r then 1 else 0) → (∀ a, a ≠ d → m' a = m a) →
+      vm S m' = vm S m → Q m' 1) :
+    Runs B (.less d l r) m Q :=
+  lessR hd hl hr fun m' h₁ h₂ => h m' h₁ h₂ (vm_of_reg hdK hKS h₂)
+
+theorem seqs_nilV {S : ℕ} (hKS : nK ≤ S) (hB : 2 < B)
+    (h : ∀ m', m' 2 = 0 → (∀ a, a ≠ 2 → m' a = m a) → vm S m' = vm S m → Q m' 1) :
+    Runs B (seqs []) m Q :=
+  seqs_nilR hB fun m' h₁ h₂ => h m' h₁ h₂ (vm_of_reg (by omega) hKS h₂)
+
+end Runs
+
+/-- Solve a goal about register values, from the facts in context. -/
+macro "rs" : tactic => `(tactic| first
+  | omega
+  | ((simp (disch := omega) only [*, Function.update_self, Function.update_of_ne]) <;> first
+      | omega
+      | (split_ifs <;> omega)))
+
+/-- Run the next register command. -/
+macro "rstep" : tactic => `(tactic| first
+  | refine Runs.seqs_cons ?_
+  | refine Runs.seq ?_
+  | (refine Runs.seqs_nilV (by assumption) (by omega) ?_; intro _ _ _ _)
+  | (refine Runs.constV (by assumption) (by omega) (by omega) (by omega) ?_; intro _ _ _ _)
+  | (refine Runs.copyV (by assumption) (by omega) (by omega) (by omega) ?_; intro _ _ _ _)
+  | (refine Runs.loadV (by assumption) (by omega) (by omega) (by omega) ?_; intro _ _ _ _)
+  | (refine Runs.addV (by assumption) (by omega) (by omega) (by omega) (by omega) (by rs) ?_;
+      intro _ _ _ _)
+  | (refine Runs.subV (by assumption) (by omega) (by omega) (by omega) (by omega) (by rs) ?_;
+      intro _ _ _ _)
+  | (refine Runs.lessV (by assumption) (by omega) (by omega) (by omega) (by omega) ?_;
+      intro _ _ _ _))
 
 /-- The harness, with the body described through `vm`. -/
 theorem exec_harness_vm {B S N : ℕ} {setS body : Cmd} {m₀ m₁ : Mem} {k₀ : ℕ} (final : Mem)

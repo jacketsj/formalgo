@@ -34,6 +34,12 @@ theorem getD_cons3 (a b c : ℕ) (t : List ℕ) (i : ℕ) :
     (a :: b :: c :: t).getD (i + 3) 0 = t.getD i 0 := by
   simp [List.getD_eq_getElem?_getD]
 
+theorem tripleNat_getD_cons (v : ℕ) (l : List ℕ) (k : ℕ) :
+    (tripleNat (v :: l)).getD k 0 =
+      if k = 0 then 1 else if k = 1 then v else if k = 2 then 0 else (tripleNat l).getD (k - 3) 0 := by
+  rw [tripleNat_cons]
+  rcases k with _ | _ | _ | k <;> simp [List.getD_eq_getElem?_getD]
+
 theorem tripleNat_getD_mul (l : List ℕ) (i : ℕ) :
     (tripleNat l).getD (3 * i) 0 = if i < l.length then 1 else 0 := by
   induction l generalizing i with
@@ -270,7 +276,7 @@ def emitBody : Cmd := seqs [vwrite 12 3, add 12 12 3, add 13 9 11, load 14 13, v
 /-- Write `n` and `A[0, n)` as triples from `L = 3 n + 6`. -/
 def emitLoop : Cmd := seq emitHead (loop 15 3 emitBody)
 
-set_option maxHeartbeats 2000000 in
+set_option maxHeartbeats 1000000 in
 theorem exec_emitLoop {B S n A : ℕ} {m : Mem} {ys : List ℕ} (hn : ys.length = n)
     (hR : ListRegs S n A m) (hKS : nK ≤ S) (hA : A = S + nK) (hB : A + n + nK < B)
     (hys : ∀ j < n, vm S m (A + j) = ys[j]!) (hyB : ∀ j < n, ys[j]! < B)
@@ -280,81 +286,95 @@ theorem exec_emitLoop {B S n A : ℕ} {m : Mem} {ys : List ℕ} (hn : ys.length 
         vm S m' a = (tripleNat (n :: ys)).getD (a - (3 * n + 6)) 0) ∧
       ∀ a, (a < 3 * n + 6 ∨ 6 * n + 9 ≤ a) → vm S m' a = vm S m a := by
   obtain ⟨⟨h1, h3, h5⟩, h4, h8, h9, h10, h16⟩ := id hR
-  set L := 3 * n + 6 with hL
-  set T : ℕ → ℕ := fun a => (tripleNat (n :: ys)).getD (a - L) 0 with hT
   suffices h : Runs B emitLoop m fun m' k => ListRegs S n A m' ∧
-      (∀ a, L ≤ a → a < 6 * n + 9 → vm S m' a = T a) ∧
-      (∀ a, (a < L ∨ 6 * n + 9 ≤ a) → vm S m' a = vm S m a) ∧ k ≤ 30 * n + 60 by
+      (∀ a, 3 * n + 6 ≤ a → a < 6 * n + 9 →
+        vm S m' a = (tripleNat (n :: ys)).getD (a - (3 * n + 6)) 0) ∧
+      (∀ a, (a < 3 * n + 6 ∨ 6 * n + 9 ≤ a) → vm S m' a = vm S m a) ∧ k ≤ 30 * n + 60 by
     obtain ⟨m', k, e, hq1, hq2, hq3, hq4⟩ := h; exact ⟨m', k, e, hq4, hq1, hq2, hq3⟩
-  apply Runs.seq
+  rstep
   -- The head.
-  refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega) (by memo) ?_)
-  refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega) (by memo) ?_)
-  refine Runs.seqs_cons (Runs.const (by omega) (by omega) ?_)
-  refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega) (by memo) ?_)
-  refine Runs.seqs_cons (Runs.copy (by omega) (by omega) ?_)
-  refine Runs.seqs_cons (Runs.vwrite (S := S) ⟨by memo, by memo, by memo⟩ (by omega) (by omega)
-    (by omega) (by omega) hKS (by omega) (by memo) ?_)
+  rstep; rstep; rstep; rstep; rstep; rstep; rstep; rstep; rstep; rstep; rstep
+  refine Runs.vwrite (S := S) ⟨by rs, by rs, by rs⟩ (by omega) (by omega) (by omega) (by omega)
+    hKS (by omega) (by rs) ?_
   intro m₆ k₆ hk₆ hR₆ hvm₆ hfr₆
-  refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega) (by memo [hfr₆]) ?_)
-  refine Runs.seqs_cons (Runs.vwrite (S := S) (hR₆.update (by omega)) (by omega) (by omega)
-    (by omega) (by omega) hKS (by omega) (by memo [hfr₆]) ?_)
+  rstep; rstep; rstep
+  refine Runs.vwrite (S := S) ⟨by rs, by rs, by rs⟩ (by omega) (by omega) (by omega) (by omega)
+    hKS (by omega) (by rs) ?_
   intro m₈ k₈ hk₈ hR₈ hvm₈ hfr₈
-  refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega) (by memo [hfr₆, hfr₈]) ?_)
-  refine Runs.seqs_cons (Runs.vwrite (S := S) (hR₈.update (by omega)) (by omega) (by omega)
-    (by omega) (by omega) hKS (by omega) (by memo [hfr₆, hfr₈]) ?_)
+  rstep; rstep; rstep
+  refine Runs.vwrite (S := S) ⟨by rs, by rs, by rs⟩ (by omega) (by omega) (by omega) (by omega)
+    hKS (by omega) (by rs) ?_
   intro m₁₀ k₁₀ hk₁₀ hR₁₀ hvm₁₀ hfr₁₀
-  refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega)
-    (by memo [hfr₆, hfr₈, hfr₁₀]) ?_)
-  refine Runs.seqs_cons (Runs.const (by omega) (by omega) ?_)
-  refine Runs.seqs_cons (Runs.less (by omega) (by omega) (by omega) ?_)
-  refine Runs.seqs_nil (by omega) ?_
-  -- The values to write.
-  have hT0 : ∀ i ≤ n, T (L + 3 * i) = 1 := by
-    intro i hi
-    simp only [hT, show L + 3 * i - L = 3 * i by omega, tripleNat_getD_mul]
-    simp; omega
-  have hT1 : T (L + 1) = n := by
-    simp only [hT, show L + 1 - L = 3 * 0 + 1 by omega, tripleNat_getD_mul_one]; simp
-  have hT1' : ∀ i < n, T (L + 3 * (i + 1) + 1) = ys[i]! := by
-    intro i hi
-    simp only [hT, show L + 3 * (i + 1) + 1 - L = 3 * (i + 1) + 1 by omega, tripleNat_getD_mul_one]
-    simp [hn, hi]
-  have hT2 : ∀ i, T (L + 3 * i + 2) = 0 := by
-    intro i
-    simp only [hT, show L + 3 * i + 2 - L = 3 * i + 2 by omega, tripleNat_getD_mul_two]
-  -- The loop invariant.
+  rstep; rstep; rstep; rstep; rstep; rstep; rstep
+  -- The loop invariant, with `i` triples written after the first.
   let P : Mem → ℕ → Prop := fun m' s => ∃ i ≤ n, ListRegs S n A m' ∧ m' 11 = i ∧
-    m' 12 = L + 3 + 3 * i ∧ m' 15 = (if i < n then 1 else 0) ∧
-    (∀ a, L ≤ a → a < L + 3 + 3 * i → vm S m' a = T a) ∧
-    (∀ a, (a < L ∨ L + 3 + 3 * i ≤ a) → vm S m' a = vm S m a) ∧ s ≤ 30 * i
+    m' 12 = 3 * n + 9 + 3 * i ∧ m' 15 = (if i < n then 1 else 0) ∧
+    (∀ a, 3 * n + 6 ≤ a → a < 3 * n + 9 + 3 * i →
+      vm S m' a = (tripleNat (n :: ys)).getD (a - (3 * n + 6)) 0) ∧
+    (∀ a, (a < 3 * n + 6 ∨ 3 * n + 9 + 3 * i ≤ a) → vm S m' a = vm S m a) ∧ s ≤ 30 * i
   refine Runs.loop P (fun m' => n - m' 11) (by omega) (by omega) ?_ ?_ ?_
   · -- One iteration.
     rintro m' s ⟨i, hi, hR', h11, h12, h15, hdone, hfr, hs⟩ heq
     obtain ⟨⟨h'1, h'3, h'5⟩, h'4, h'8, h'9, h'10, h'16⟩ := id hR'
     have hlt : i < n := by by_contra h; simp [h15, h'3, h] at heq
-    refine Runs.seqs_cons (Runs.vwrite (S := S) hR'.1 (by omega) (by omega) (by omega) (by omega)
-      hKS (by omega) (by omega) ?_)
+    rstep
+    refine Runs.vwrite (S := S) ⟨by rs, by rs, by rs⟩ (by omega) (by omega) (by omega)
+      (by omega) hKS (by omega) (by rs) ?_
     intro m₁ k₁ hk₁ hR₁ hvm₁ hfr₁
-    refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega) (by memo [hfr₁]) ?_)
-    refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega) (by memo [hfr₁]) ?_)
-    refine Runs.seqs_cons (Runs.load (by omega) (by omega) ?_)
-    refine Runs.seqs_cons (Runs.vwrite (S := S) ((hR₁.update (by omega)).update (by omega)
-      |>.update (by omega)) (by omega) (by omega) (by omega) (by omega) hKS (by omega)
-      (by memo [hfr₁]) ?_)
+    rstep; rstep; rstep; rstep; rstep; rstep; rstep
+    refine Runs.vwrite (S := S) ⟨by rs, by rs, by rs⟩ (by omega) (by omega) (by omega)
+      (by omega) hKS (by omega) (by rs) ?_
     intro m₅ k₅ hk₅ hR₅ hvm₅ hfr₅
-    refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega) (by memo [hfr₁, hfr₅]) ?_)
-    refine Runs.seqs_cons (Runs.vwrite (S := S) (hR₅.update (by omega)) (by omega) (by omega)
-      (by omega) (by omega) hKS (by omega) (by memo [hfr₁, hfr₅]) ?_)
+    rstep; rstep; rstep
+    refine Runs.vwrite (S := S) ⟨by rs, by rs, by rs⟩ (by omega) (by omega) (by omega)
+      (by omega) hKS (by omega) (by rs) ?_
     intro m₇ k₇ hk₇ hR₇ hvm₇ hfr₇
-    refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega)
-      (by memo [hfr₁, hfr₅, hfr₇]) ?_)
-    refine Runs.seqs_cons (Runs.add (by omega) (by omega) (by omega)
-      (by memo [hfr₁, hfr₅, hfr₇]) ?_)
-    refine Runs.seqs_cons (Runs.less (by omega) (by omega) (by omega) ?_)
-    refine Runs.seqs_nil (by omega) ?_
-    sorry
-  · sorry
-  · sorry
+    rstep; rstep; rstep; rstep; rstep; rstep; rstep
+    have hval : m₁ (A + i) = ys[i]! := by
+      have h := congrFun hvm₁ (A + i)
+      rw [vm_high hKS (by omega), update_apply, if_neg (by rw [h12]; omega),
+        hfr _ (.inr (by omega)), hys i hlt] at h
+      exact h
+    refine ⟨⟨i + 1, by omega, ⟨⟨by rs, by rs, by rs⟩, by rs, by rs, by rs, by rs, by rs⟩, by rs,
+      by rs, by rs, ?_, ?_, by omega⟩, by rs⟩
+    · intro a ha1 ha2
+      simp (disch := omega) only [*]
+      simp only [update_apply]
+      split_ifs with e₂ e₁ e₀
+      · subst e₂
+        rw [show 3 * n + 9 + 3 * i + 1 + 1 - (3 * n + 6) = 3 * (i + 1) + 2 by omega,
+          tripleNat_getD_mul_two]
+      · subst e₁
+        rw [show 3 * n + 9 + 3 * i + 1 - (3 * n + 6) = 3 * (i + 1) + 1 by omega,
+          tripleNat_getD_mul_one]
+        have := hval; rw [hA] at this
+        simpa [hn, hlt] using this
+      · subst e₀
+        rw [show 3 * n + 9 + 3 * i - (3 * n + 6) = 3 * (i + 1) by omega, tripleNat_getD_mul]
+        simp [hn, hlt]
+      · exact hdone a ha1 (by omega)
+    · intro a ha
+      simp (disch := omega) only [*]
+      simp only [update_apply]
+      split_ifs <;> first | omega | exact hfr a (by omega)
+  · -- The exit.
+    rintro m' s ⟨i, hi, hR', h11, h12, h15, hdone, hfr, hs⟩ hne
+    have hin : i = n := by
+      by_contra h
+      obtain ⟨⟨_, h'3, _⟩, _⟩ := hR'
+      exact hne (by rw [h15, h'3, if_pos (by omega)])
+    subst hin
+    exact ⟨hR', fun a ha1 ha2 => hdone a ha1 (by omega), fun a ha => hfr a (by omega), by omega⟩
+  · -- The start.
+    refine ⟨0, by omega, ⟨⟨by rs, by rs, by rs⟩, by rs, by rs, by rs, by rs, by rs⟩, by rs, by rs,
+      by rs, ?_, ?_, by omega⟩
+    · intro a ha1 ha2
+      simp (disch := omega) only [*]
+      simp only [update_apply, tripleNat_getD_cons]
+      split_ifs <;> first | rfl | omega
+    · intro a ha
+      simp (disch := omega) only [*]
+      simp only [update_apply]
+      split_ifs <;> first | rfl | omega
 
 end Formalgo.LLMUnchecked
