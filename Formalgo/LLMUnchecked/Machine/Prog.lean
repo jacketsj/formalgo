@@ -378,6 +378,18 @@ macro "rstep" : tactic => `(tactic| first
   | (refine Runs.lessV (by assumption) (by omega) (by omega) (by omega) (by omega) ?_;
       intro _ _ _ _))
 
+/-- Run the next register command, without tracking `vm`. -/
+macro "rstepR" : tactic => `(tactic| first
+  | refine Runs.seqs_cons ?_
+  | refine Runs.seq ?_
+  | (refine Runs.seqs_nilR (by omega) ?_; intro _ _ _)
+  | (refine Runs.constR (by omega) (by omega) ?_; intro _ _ _)
+  | (refine Runs.copyR (by omega) (by omega) ?_; intro _ _ _)
+  | (refine Runs.loadR (by omega) (by omega) ?_; intro _ _ _)
+  | (refine Runs.addR (by omega) (by omega) (by omega) (by rs) ?_; intro _ _ _)
+  | (refine Runs.subR (by omega) (by omega) (by omega) (by rs) ?_; intro _ _ _)
+  | (refine Runs.lessR (by omega) (by omega) (by omega) ?_; intro _ _ _))
+
 /-- The harness, with the body described through `vm`. -/
 theorem exec_harness_vm {B S N : ℕ} {setS body : Cmd} {m₀ m₁ : Mem} {k₀ : ℕ} (final : Mem)
     (T : ℕ) (hKS : nK ≤ S) (hNS : N ≤ S) (hB : S + nK < B)
