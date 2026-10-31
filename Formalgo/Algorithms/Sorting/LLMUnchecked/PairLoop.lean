@@ -1,0 +1,252 @@
+import Formalgo.Algorithms.Sorting.LLMUnchecked.MergeLoop
+
+/-!
+# Merging all pairs of runs on the machine
+
+LLM-generated; not checked by a human.
+-/
+
+namespace Formalgo.Algorithms.Sorting.MergeSort
+
+open LLMUnchecked Cmd Function
+
+/-- `rs`, trying `decide` before `omega` on side conditions. -/
+local macro "rsd" : tactic => `(tactic| first
+  | omega
+  | ((simp (disch := first | decide | omega) only [*, Function.update_self,
+      Function.update_of_ne]) <;> first
+      | omega
+      | (split_ifs <;> omega)))
+
+/-! ### Merging all pairs of runs -/
+
+theorem not_mem_mergeRegs_of_ge {a : ℕ} (h : 32 ≤ a) : a ∉ mergeRegs := by
+  rw [mem_mergeRegs]; omega
+
+theorem not_mem_mergeRegs {r : ℕ} (h2 : r ≠ 2) (h12 : r ≠ 12) (h13 : r ≠ 13) (h14 : r ≠ 14)
+    (h15 : r ≠ 15) (h24 : r ≠ 24) (h26 : r ≠ 26) (h28 : r ≠ 28) (h30 : r ≠ 30) (h31 : r ≠ 31) :
+    r ∉ mergeRegs := by
+  rw [mem_mergeRegs]; omega
+
+/-- `mid := min(mid, n)`, through a comparison already in register `12`. -/
+theorem ite_min {B d : ℕ} {m : Mem} {Q : Mem → ℕ → Prop} (h3 : m 3 = 1)
+    (h12 : m 12 = if m d < m 4 then 1 else 0) (hdB : d < B) (h12B : 12 < B) (hd2 : d ≠ 2)
+    (h : ∀ m' k, m' d = min (m d) (m 4) → (∀ a, a ≠ 2 → a ≠ d → m' a = m a) → k ≤ 3 →
+      Q m' k) : Runs B (.ite 12 3 nop (.copy d 4)) m Q := by
+  refine Runs.ite (by omega) (by omega) (fun hc => ?_) (fun hc => ?_)
+  · have hlt := lt_of_cond h12 hc h3
+    refine Runs.constR (by omega) (by omega) fun m' h2 hf => h m' 3 ?_ (fun a ha _ => hf a ha) le_rfl
+    rw [hf d hd2]; omega
+  · have hlt := not_lt_of_cond h12 hc h3
+    refine Runs.copyR (by omega) (by omega) fun m' hd hf => h m' 2 ?_ (fun a _ ha => hf a ha)
+      (by omega)
+    rw [hd]; omega
+
+/-- The fixed registers of a list program are unchanged. -/
+def KeepL (m m' : Mem) : Prop :=
+  m' 1 = m 1 ∧ m' 3 = m 3 ∧ m' 4 = m 4 ∧ m' 5 = m 5 ∧ m' 8 = m 8 ∧ m' 9 = m 9 ∧ m' 10 = m 10 ∧
+    m' 16 = m 16
+
+/-- The merged runs at a multiple of `2 w`. -/
+theorem merge_runs_eq {w j : ℕ} (hw : 0 < w) (L : List ℕ) :
+    ((L.drop (j * (2 * w))).take w).merge (((L.drop (j * (2 * w))).drop w).take w) nle =
+      ((mergePass nle w L).drop (j * (2 * w))).take (2 * w) := by
+  rw [drop_mergePass_mul hw, take_mergePass hw]
+
+/-- The pair loop invariant: the runs before `i` merged. -/
+def PairInv (L : List ℕ) (src dst w : ℕ) (m m' : Mem) (s : ℕ) : Prop :=
+  ∃ i ≤ L.length, (i = L.length ∨ ∃ j, i = j * (2 * w)) ∧ m' 21 = i ∧
+    m' 11 = (if i < L.length then 1 else 0) ∧ KeepL m m' ∧ m' 18 = src ∧ m' 19 = dst ∧
+    m' 20 = w ∧ (∀ j < i, m' (dst + j) = (mergePass nle w L).getD j 0) ∧
+    (∀ a, 32 ≤ a → (a < dst ∨ dst + L.length ≤ a) → m' a = m a) ∧ s ≤ 60 * i
+
+theorem PairInv.mono {L : List ℕ} {src dst w : ℕ} {m m' : Mem} {s s' : ℕ}
+    (h : PairInv L src dst w m m' s) (hs : s' ≤ s) : PairInv L src dst w m m' s' := by
+  obtain ⟨i, hi, a, b, c, d, e, f, g, h₁, h₂, h₃⟩ := h
+  exact ⟨i, hi, a, b, c, d, e, f, g, h₁, h₂, by omega⟩
+
+set_option maxHeartbeats 4000000 in
+/-- Merge the runs at `i` and move to `hi`, from just before the merge loop. -/
+theorem pair_tail {B src dst w i j : ℕ} {L : List ℕ} {m mA : Mem} (hw : 0 < w)
+    (hwn : w < L.length) (hlt : i < L.length) (hj : j * (2 * w) = i)
+    (hdisj : dst + L.length ≤ src ∨ src + L.length ≤ dst) (h32 : 32 ≤ src ∧ 32 ≤ dst)
+    (hB : src + L.length < B ∧ dst + L.length < B ∧ 2 * L.length < B) (hv : ∀ v ∈ L, v < B)
+    (a3 : mA 3 = 1) (a4 : mA 4 = L.length) (a18 : mA 18 = src) (a19 : mA 19 = dst)
+    (a20 : mA 20 = w) (a23 : mA 23 = min (min (i + w) L.length + w) L.length)
+    (a24 : mA 24 = src + i) (a25 : mA 25 = src + min (i + w) L.length)
+    (a26 : mA 26 = src + min (i + w) L.length)
+    (a27 : mA 27 = src + min (min (i + w) L.length + w) L.length) (a28 : mA 28 = dst + i)
+    (a29 : mA 29 = dst + min (min (i + w) L.length + w) L.length)
+    (a12 : mA 12 = if dst + i < dst + min (min (i + w) L.length + w) L.length then 1 else 0)
+    (ak : KeepL m mA) (asrc : ∀ t (ht : t < L.length), mA (src + t) = L[t])
+    (adst : ∀ t < i, mA (dst + t) = (mergePass nle w L).getD t 0)
+    (afr : ∀ a, 32 ≤ a → (a < dst ∨ dst + L.length ≤ a) → mA a = m a) :
+    Runs B (seqs [.loop 12 3 mergeBody, copy 21 23, less 11 21 4]) mA fun m'' k =>
+      k ≤ 24 * (min (min (i + w) L.length + w) L.length - i) + 5 ∧
+      m'' 21 = min (min (i + w) L.length + w) L.length ∧
+      ∀ s', s' ≤ 60 * min (min (i + w) L.length + w) L.length → PairInv L src dst w m m'' s' := by
+  have hPlen : ((L.drop i).take w).length = min (i + w) L.length - i := by simp; omega
+  have hQlen : (((L.drop i).drop w).take w).length =
+      min (min (i + w) L.length + w) L.length - min (i + w) L.length := by simp; omega
+  have hdP : dst + i + ((L.drop i).take w).length + (((L.drop i).drop w).take w).length ≤
+      src + i ∨ src + i + ((L.drop i).take w).length ≤ dst + i := by
+    rw [hPlen, hQlen]; clear * - hdisj hlt hw; omega
+  have hdQ : dst + i + ((L.drop i).take w).length + (((L.drop i).drop w).take w).length ≤
+      src + min (i + w) L.length ∨
+      src + min (i + w) L.length + (((L.drop i).drop w).take w).length ≤ dst + i := by
+    rw [hPlen, hQlen]; clear * - hdisj hlt hw; omega
+  have h32' : 32 ≤ src + i ∧ 32 ≤ src + min (i + w) L.length ∧ 32 ≤ dst + i := by
+    clear * - h32; omega
+  have hB' : dst + i + ((L.drop i).take w).length + (((L.drop i).drop w).take w).length < B ∧
+      src + i + ((L.drop i).take w).length < B ∧
+      src + min (i + w) L.length + (((L.drop i).drop w).take w).length < B := by
+    rw [hPlen, hQlen]; clear * - hB hlt hw hwn; omega
+  have c25 : mA 25 = src + i + ((L.drop i).take w).length := by
+    rw [a25, hPlen]; clear * - hlt; omega
+  have c27 : mA 27 = src + min (i + w) L.length + (((L.drop i).drop w).take w).length := by
+    rw [a27, hQlen]; clear * - hlt; omega
+  have c29 : mA 29 = dst + i + ((L.drop i).take w).length +
+      (((L.drop i).drop w).take w).length := by
+    rw [a29, hPlen, hQlen]; clear * - hlt; omega
+  have c12 : mA 12 = if dst + i < dst + i + ((L.drop i).take w).length +
+      (((L.drop i).drop w).take w).length then 1 else 0 := by
+    rw [a12, hPlen, hQlen]; clear * - hlt; split_ifs <;> omega
+  refine Runs.seqs_cons (Runs.mono (merge_loop (B := B) (P := (L.drop i).take w)
+    (Q := ((L.drop i).drop w).take w) (p₀ := src + i) (q₀ := src + min (i + w) L.length)
+    (k₀ := dst + i) a3 a24 c25 a26 c27 a28 c29 c12 ?_ ?_
+    hdP hdQ h32' hB'
+    (fun v h => hv v (List.mem_of_mem_drop (List.mem_of_mem_take h)))
+    (fun v h => hv v (List.mem_of_mem_drop (List.mem_of_mem_drop (List.mem_of_mem_take h)))))
+    ?_)
+  · intro t ht
+    rw [List.getElem_take, List.getElem_drop, show src + i + t = src + (i + t) by omega]
+    exact asrc _ _
+  · intro t ht
+    rw [hQlen] at ht
+    rw [List.getElem_take, List.getElem_drop, List.getElem_drop,
+      show src + min (i + w) L.length + t = src + (i + (w + t)) by omega]
+    exact asrc _ _
+  rintro m₁₄ s₁₄ ⟨g24, g26, g28, harr, hfr14, hs14⟩
+  clear c25 c27 c29 c12 hdP hdQ h32' hB' a24 a25 a26 a27 a28 a29 a12 g24 g26 g28
+  have gr : ∀ r, r < 32 → r ≠ 2 → r ≠ 12 → r ≠ 13 → r ≠ 14 → r ≠ 15 → r ≠ 24 → r ≠ 26 →
+      r ≠ 28 → r ≠ 30 → r ≠ 31 → m₁₄ r = mA r := by
+    intro r hr h2 h12 h13 h14 h15 h24 h26 h28 h30 h31
+    exact hfr14 r (not_mem_mergeRegs h2 h12 h13 h14 h15 h24 h26 h28 h30 h31)
+      (.inl (by clear * - hr h32; omega))
+  have gp : ∀ a, 32 ≤ a → (a < dst + i ∨ dst + i + ((L.drop i).take w).length +
+      (((L.drop i).drop w).take w).length ≤ a) → m₁₄ a = mA a := fun a ha ha' =>
+    hfr14 a (not_mem_mergeRegs_of_ge ha) ha'
+  have hmr := merge_runs_eq (j := j) hw L
+  rw [hj] at hmr
+  have hlenM : ((L.drop i).take w).length + (((L.drop i).drop w).take w).length =
+      min (min (i + w) L.length + w) L.length - i := by rw [hPlen, hQlen]; omega
+  have hdst14 : ∀ t < min (min (i + w) L.length + w) L.length,
+      m₁₄ (dst + t) = (mergePass nle w L).getD t 0 := by
+    intro t ht
+    by_cases hti : t < i
+    · rw [gp _ (by clear * - h32; omega) (.inl (by clear * - hti; omega)), adst t hti]
+    · have hidx : t - i < ((L.drop i).take w |>.merge (((L.drop i).drop w).take w) nle).length :=
+        by rw [List.length_merge, hlenM]; clear * - ht hti; omega
+      rw [show dst + t = dst + i + (t - i) by omega, harr (t - i) hidx, List.getElem_of_eq hmr,
+        List.getElem_take, List.getElem_drop, List.getD_eq_getElem?_getD,
+        List.getElem?_eq_getElem (by rw [length_mergePass]; clear * - ht; omega), Option.getD_some]
+      congr 1; clear * - hti; omega
+  have hfr' : ∀ a, 32 ≤ a → (a < dst ∨ dst + L.length ≤ a) → m₁₄ a = m a := by
+    intro a ha ha'
+    rw [gp a ha (by rw [Nat.add_assoc (dst + i), hlenM]; clear * - ha' hlt; omega),
+      afr a ha ha']
+  obtain ⟨k1, k3, k4, k5, k8, k9, k10, k16⟩ := ak
+  have b3 : m₁₄ 3 = 1 := by rw [gr 3 (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), a3]
+  have b4 : m₁₄ 4 = L.length := by rw [gr 4 (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), a4]
+  have b23 : m₁₄ 23 = min (min (i + w) L.length + w) L.length := by
+    rw [gr 23 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide) (by decide) (by decide), a23]
+  have b1 : m₁₄ 1 = mA 1 := gr 1 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  have b5 : m₁₄ 5 = mA 5 := gr 5 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  have b8 : m₁₄ 8 = mA 8 := gr 8 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  have b9 : m₁₄ 9 = mA 9 := gr 9 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  have b10 : m₁₄ 10 = mA 10 := gr 10 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  have b16 : m₁₄ 16 = mA 16 := gr 16 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  have b18 : m₁₄ 18 = mA 18 := gr 18 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  have b19 : m₁₄ 19 = mA 19 := gr 19 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  have b20 : m₁₄ 20 = mA 20 := gr 20 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+  clear hfr14 harr adst afr asrc hmr hv gp gr
+  rstepR; rstepR; rstepR; rstepR; rstepR
+  rename_i m₁₅ h₁₅ hf₁₅ m₁₆ h₁₆ hf₁₆ m₁₇ h₁₇ hf₁₇
+  refine ⟨by rw [hlenM] at hs14; omega, by rsd, fun s' hs' => ⟨min (min (i + w) L.length + w)
+    L.length, by omega, ?_, by rsd, by rsd, ⟨by rsd, by rsd, by rsd, by rsd, by rsd, by rsd, by rsd, by rsd⟩,
+    by rsd, by rsd, by rsd, fun t ht => by rsd, fun a ha ha' => by rsd, hs'⟩⟩
+  by_cases h : min (min (i + w) L.length + w) L.length < L.length
+  · exact .inr ⟨j + 1, by rw [Nat.succ_mul]; omega⟩
+  · exact .inl (by omega)
+
+set_option maxHeartbeats 4000000 in
+/-- One step of the pair loop. -/
+theorem pair_step {B src dst w i j s : ℕ} {L : List ℕ} {m m' : Mem} (hw : 0 < w)
+    (hwn : w < L.length) (hlt : i < L.length) (hj : j * (2 * w) = i)
+    (hdisj : dst + L.length ≤ src ∨ src + L.length ≤ dst) (h32 : 32 ≤ src ∧ 32 ≤ dst)
+    (hB : src + L.length < B ∧ dst + L.length < B ∧ 2 * L.length < B) (hv : ∀ v ∈ L, v < B)
+    (hsrc : Arr m src L) (h'21 : m' 21 = i) (hk : KeepL m m') (h3 : m 3 = 1)
+    (h4 : m 4 = L.length) (h'18 : m' 18 = src) (h'19 : m' 19 = dst) (h'20 : m' 20 = w)
+    (hdst : ∀ t < i, m' (dst + t) = (mergePass nle w L).getD t 0)
+    (hfr : ∀ a, 32 ≤ a → (a < dst ∨ dst + L.length ≤ a) → m' a = m a) (hs : s ≤ 60 * i) :
+    Runs B pairBody m' fun m'' k => PairInv L src dst w m m'' (s + k + 2) ∧
+      L.length - m'' 21 < L.length - m' 21 := by
+  obtain ⟨k1, k3, k4, k5, k8, k9, k10, k16⟩ := id hk
+  have hsrc2 : ∀ t (ht : t < L.length), m (src + t) = L[t] := hsrc
+  clear hsrc
+  -- `mid := min(i + w, n)`.
+  rstepR; rstepR; rstepR; rstepR; rstepR
+  rename_i m₁ h₁ hf₁ m₂ h₂ hf₂
+  refine ite_min (by rsd) (by rsd) (by omega) (by omega) (by omega) ?_
+  intro m₃ k₃ h₃ hf₃ hk₃
+  -- `hi := min(mid + w, n)`.
+  rstepR; rstepR; rstepR; rstepR; rstepR
+  rename_i m₄ h₄ hf₄ m₅ h₅ hf₅
+  refine ite_min (by rsd) (by rsd) (by omega) (by omega) (by omega) ?_
+  intro m₆ k₆ h₆ hf₆ hk₆
+  -- Set up the merge.
+  rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR
+  rstepR; rstepR
+  rename_i m₇ h₇ hf₇ m₈ h₈ hf₈ m₉ h₉ hf₉ m₁₀ h₁₀ hf₁₀ m₁₁ h₁₁ hf₁₁ m₁₂ h₁₂ hf₁₂ m₁₃ h₁₃ hf₁₃
+  refine Runs.mono (pair_tail (B := B) (src := src) (dst := dst) (w := w) (L := L) (m := m)
+    (mA := m₁₃) (i := i) (j := j) hw hwn hlt hj hdisj h32 hB hv (by rsd) (by rsd)
+    (by rsd) (by rsd) (by rsd) (by rsd) (by rsd) (by rsd) (by rsd) (by rsd) (by rsd) (by rsd)
+    (by rsd) ⟨by rsd, by rsd, by rsd, by rsd, by rsd, by rsd, by rsd, by rsd⟩
+    (fun t ht => by rsd) (fun t ht => by rsd) (fun a ha ha' => by rsd)) ?_
+  rintro m'' k ⟨hk', h21'', hinv⟩
+  refine ⟨hinv _ ?_, by rw [h21'', h'21]; clear * - hlt hw; omega⟩
+  clear * - hs hk' hk₃ hk₆ hlt hw
+  omega
+
+set_option maxHeartbeats 1000000 in
+theorem pair_loop {B src dst w : ℕ} {L : List ℕ} {m : Mem} (h3 : m 3 = 1)
+    (h4 : m 4 = L.length) (h18 : m 18 = src) (h19 : m 19 = dst) (h20 : m 20 = w)
+    (h21 : m 21 = 0) (h11 : m 11 = if 0 < L.length then 1 else 0) (hw : 0 < w)
+    (hwn : w < L.length) (hsrc : Arr m src L)
+    (hdisj : dst + L.length ≤ src ∨ src + L.length ≤ dst)
+    (h32 : 32 ≤ src ∧ 32 ≤ dst)
+    (hB : src + L.length < B ∧ dst + L.length < B ∧ 2 * L.length < B)
+    (hv : ∀ v ∈ L, v < B) :
+    Runs B (.loop 11 3 pairBody) m fun m' s => Arr m' dst (mergePass nle w L) ∧ KeepL m m' ∧
+      m' 18 = src ∧ m' 19 = dst ∧ m' 20 = w ∧
+      (∀ a, 32 ≤ a → (a < dst ∨ dst + L.length ≤ a) → m' a = m a) ∧ s ≤ 60 * L.length + 1 := by
+  refine Runs.loop (PairInv L src dst w m) (fun m' => L.length - m' 21) (by omega) (by omega)
+    ?_ ?_ ?_
+  · rintro m' s ⟨i, hi, hij, h'21, h'11, hk, h'18, h'19, h'20, hdst, hfr, hs⟩ heq
+    have hlt : i < L.length := lt_of_cond h'11 heq (by rw [hk.2.1, h3])
+    obtain ⟨j, hj⟩ : ∃ j, j * (2 * w) = i := (hij.resolve_left (by omega)).imp fun _ h => h.symm
+    exact pair_step hw hwn hlt hj hdisj h32 hB hv hsrc h'21 hk h3 h4 h'18 h'19 h'20 hdst hfr hs
+  · rintro m' s ⟨i, hi, hij, h'21, h'11, hk, h'18, h'19, h'20, hdst, hfr, hs⟩ hne
+    have hin : i = L.length := by
+      by_contra h; exact hne (by rw [h'11, hk.2.1, h3, if_pos (by omega)])
+    subst hin
+    refine ⟨fun j hj => ?_, hk, h'18, h'19, h'20, hfr, by omega⟩
+    rw [length_mergePass] at hj
+    rw [hdst j hj, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem]; rfl
+  · exact ⟨0, by omega, .inr ⟨0, by simp⟩, h21, h11, ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩,
+      h18, h19, h20, fun j hj => by omega, fun a _ _ => rfl, by omega⟩
+
+end Formalgo.Algorithms.Sorting.MergeSort

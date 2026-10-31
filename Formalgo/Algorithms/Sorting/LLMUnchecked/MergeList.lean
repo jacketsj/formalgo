@@ -1,0 +1,169 @@
+import Formalgo.Algorithms.Sorting.Statement
+import Formalgo.Algorithms.Sorting.LLMUnchecked.Algorithm
+
+/-!
+# Merge passes on lists
+
+LLM-generated; not checked by a human.
+-/
+
+namespace Formalgo.Algorithms.Sorting.MergeSort
+
+/-! ### Merge passes on lists -/
+
+section MergePass
+
+variable {α : Type*} (le : α → α → Bool)
+
+/-- Merge each pair of consecutive runs of width `w`. -/
+def mergePass (w : ℕ) (l : List α) : List α :=
+  if _ : 0 < w ∧ l ≠ [] then
+    (l.take w).merge ((l.drop w).take w) le ++ mergePass w (l.drop (2 * w))
+  else l
+termination_by l.length
+decreasing_by
+  obtain ⟨_hw, hl⟩ := ‹0 < w ∧ l ≠ []›
+  have := List.length_pos_of_ne_nil hl
+  simp only [List.length_drop]
+  omega
+
+/-- `passes j l` performs the passes with widths `1, 2, …, 2 ^ (j - 1)`. -/
+def passes : ℕ → List α → List α
+  | 0, l => l
+  | j + 1, l => mergePass le (2 ^ j) (passes j l)
+
+/-- Every run `l[jw, (j+1)w)` of width `w` is sorted. -/
+def RunsSorted (w : ℕ) (l : List α) : Prop :=
+  ∀ j, ((l.drop (j * w)).take w).Pairwise (le · ·)
+
+variable {le}
+
+theorem mergePass_of_ne_nil {w : ℕ} {l : List α} (hw : 0 < w) (hl : l ≠ []) :
+    mergePass le w l =
+      (l.take w).merge ((l.drop w).take w) le ++ mergePass le w (l.drop (2 * w)) := by
+  rw [mergePass, dif_pos ⟨hw, hl⟩]
+
+@[simp] theorem mergePass_nil (w : ℕ) : mergePass le w [] = [] := by
+  rw [mergePass]; simp
+
+theorem mergePass_perm (w : ℕ) (l : List α) : (mergePass le w l).Perm l := by
+  induction l using mergePass.induct w with
+  | case1 l h ih =>
+    rw [mergePass_of_ne_nil h.1 h.2]
+    refine ((List.merge_perm_append le).append ih).trans (List.Perm.of_eq ?_)
+    rw [List.append_assoc, Nat.two_mul, ← List.drop_drop, List.take_append_drop,
+      List.take_append_drop]
+  | case2 l h => rw [mergePass, dif_neg h]
+
+theorem length_mergePass (w : ℕ) (l : List α) : (mergePass le w l).length = l.length :=
+  (mergePass_perm w l).length_eq
+
+theorem length_merge_runs (w : ℕ) (l : List α) :
+    ((l.take w).merge ((l.drop w).take w) le).length = min (2 * w) l.length := by
+  simp; omega
+
+/-- The first merged run of a pass. -/
+theorem take_mergePass {w : ℕ} (hw : 0 < w) (l : List α) :
+    (mergePass le w l).take (2 * w) = (l.take w).merge ((l.drop w).take w) le := by
+  by_cases hl : l = []
+  · simp [hl]
+  have hM := length_merge_runs (le := le) w l
+  rw [mergePass_of_ne_nil hw hl, List.take_append, List.take_of_length_le (by omega)]
+  by_cases h : 2 * w ≤ l.length
+  · rw [hM, Nat.min_eq_left h, Nat.sub_self, List.take_zero, List.append_nil]
+  · rw [List.drop_eq_nil_of_le (as := l) (i := 2 * w) (by omega), mergePass_nil, List.take_nil,
+      List.append_nil]
+
+/-- The rest of a pass is a pass on the rest. -/
+theorem drop_mergePass {w : ℕ} (hw : 0 < w) (l : List α) :
+    (mergePass le w l).drop (2 * w) = mergePass le w (l.drop (2 * w)) := by
+  by_cases hl : l = []
+  · simp [hl]
+  have hM := length_merge_runs (le := le) w l
+  rw [mergePass_of_ne_nil hw hl, List.drop_append, List.drop_eq_nil_of_le (by omega),
+    List.nil_append]
+  by_cases h : 2 * w ≤ l.length
+  · rw [hM, Nat.min_eq_left h, Nat.sub_self, List.drop_zero]
+  · rw [List.drop_eq_nil_of_le (as := l) (i := 2 * w) (by omega)]; simp
+
+theorem drop_mergePass_mul {w : ℕ} (hw : 0 < w) (l : List α) (j : ℕ) :
+    (mergePass le w l).drop (j * (2 * w)) = mergePass le w (l.drop (j * (2 * w))) := by
+  induction j generalizing l with
+  | zero => simp
+  | succ j ih => rw [Nat.succ_mul, ← List.drop_drop, ← List.drop_drop, ih, drop_mergePass hw]
+
+theorem runsSorted_one (l : List α) : RunsSorted le 1 l := fun j => by
+  cases l.drop (j * 1) <;> simp
+
+/-- A pass with width `w` turns sorted runs of width `w` into sorted runs of width `2 w`. -/
+theorem RunsSorted.mergePass (trans : ∀ a b c, le a b → le b c → le a c)
+    (total : ∀ a b, le a b || le b a) {w : ℕ} (hw : 0 < w) {l : List α} (h : RunsSorted le w l) :
+    RunsSorted le (2 * w) (mergePass le w l) := fun j => by
+  rw [drop_mergePass_mul hw, take_mergePass hw]
+  refine List.pairwise_merge trans total _ _ ?_ ?_
+  · simpa [Nat.mul_assoc, Nat.mul_left_comm] using h (2 * j)
+  · simpa [List.drop_drop, Nat.mul_assoc, Nat.mul_left_comm, Nat.add_mul, Nat.mul_add]
+      using h (2 * j + 1)
+
+theorem RunsSorted.pairwise {w : ℕ} {l : List α} (h : RunsSorted le w l) (hl : l.length ≤ w) :
+    l.Pairwise (le · ·) := by
+  simpa [List.take_of_length_le hl] using h 0
+
+theorem passes_perm (j : ℕ) (l : List α) : (passes le j l).Perm l := by
+  induction j with
+  | zero => rfl
+  | succ j ih => exact (mergePass_perm _ _).trans ih
+
+theorem runsSorted_passes (trans : ∀ a b c, le a b → le b c → le a c)
+    (total : ∀ a b, le a b || le b a) (j : ℕ) (l : List α) :
+    RunsSorted le (2 ^ j) (passes le j l) := by
+  induction j with
+  | zero => exact runsSorted_one l
+  | succ j ih =>
+    simpa [passes, Nat.pow_succ, Nat.mul_comm] using
+      ih.mergePass trans total (Nat.two_pow_pos j)
+
+/-! Steps of a merge. -/
+
+theorem merge_nil' (l : List α) : l.merge [] le = l := by
+  cases l <;> simp [List.merge]
+
+/-- Merging the rest, after taking the left element. -/
+theorem merge_drop_left {P Q : List α} {x y : ℕ}
+    (h : (P.merge Q le).drop (x + y) = (P.drop x).merge (Q.drop y) le) (hx : x < P.length)
+    (hyle : y ≤ Q.length) (hy : ∀ hyQ : y < Q.length, le P[x] (Q[y]'hyQ)) :
+    (P.merge Q le).drop (x + y + 1) = (P.drop (x + 1)).merge (Q.drop y) le ∧
+      ∃ h', (P.merge Q le)[x + y]'h' = P[x] := by
+  have hlen : x + y < (P.merge Q le).length := by rw [List.length_merge]; omega
+  rw [List.drop_eq_getElem_cons hlen, List.drop_eq_getElem_cons hx] at h
+  by_cases hyQ : y < Q.length
+  · rw [List.drop_eq_getElem_cons hyQ, List.cons_merge_cons, if_pos (hy hyQ),
+      ← List.drop_eq_getElem_cons hyQ] at h
+    obtain ⟨h1, h2⟩ := List.cons.inj h
+    exact ⟨h2, hlen, h1⟩
+  · rw [List.drop_eq_nil_of_le (as := Q) (i := y) (by omega), merge_nil'] at h
+    obtain ⟨h1, h2⟩ := List.cons.inj h
+    refine ⟨?_, hlen, h1⟩
+    rw [List.drop_eq_nil_of_le (as := Q) (i := y) (by omega), merge_nil', h2]
+
+/-- Merging the rest, after taking the right element. -/
+theorem merge_drop_right {P Q : List α} {x y : ℕ}
+    (h : (P.merge Q le).drop (x + y) = (P.drop x).merge (Q.drop y) le) (hy : y < Q.length)
+    (hxle : x ≤ P.length) (hx : ∀ hxP : x < P.length, le (P[x]'hxP) Q[y] = false) :
+    (P.merge Q le).drop (x + y + 1) = (P.drop x).merge (Q.drop (y + 1)) le ∧
+      ∃ h', (P.merge Q le)[x + y]'h' = Q[y] := by
+  have hlen : x + y < (P.merge Q le).length := by rw [List.length_merge]; omega
+  rw [List.drop_eq_getElem_cons hlen, List.drop_eq_getElem_cons hy] at h
+  by_cases hxP : x < P.length
+  · rw [List.drop_eq_getElem_cons hxP, List.cons_merge_cons, if_neg (by simp [hx hxP]),
+      ← List.drop_eq_getElem_cons hxP] at h
+    obtain ⟨h1, h2⟩ := List.cons.inj h
+    exact ⟨h2, hlen, h1⟩
+  · rw [List.drop_eq_nil_of_le (as := P) (i := x) (by omega), List.nil_merge] at h
+    obtain ⟨h1, h2⟩ := List.cons.inj h
+    refine ⟨?_, hlen, h1⟩
+    rw [List.drop_eq_nil_of_le (as := P) (i := x) (by omega), List.nil_merge, h2]
+
+end MergePass
+
+end Formalgo.Algorithms.Sorting.MergeSort
