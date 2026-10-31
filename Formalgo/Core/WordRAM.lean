@@ -1,4 +1,3 @@
-import Mathlib.Data.Nat.Digits.Defs
 import Formalgo.Core.Code
 import Formalgo.Core.RAM
 
@@ -49,15 +48,13 @@ def wordRAM (w : ℕ) (operations : List WordRAM.Operation) :
     | ⟨.shiftLeft, _⟩ => (· <<< ·)
     | ⟨.shiftRight, _⟩ => (· >>> ·)
 
-/-- A natural number is written as its number of digits in base `2 ^ w`, then its digits, least
-significant first. -/
-instance WordRAM.code (w : ℕ) : Code ℕ (BitVec w) where
-  encode n := let digits := Nat.digits (2 ^ w) n
-    .ofNat w digits.length :: digits.map (.ofNat w)
-  decode stream :=
-    let count := (stream 0).toNat
-    (Nat.ofDigits (2 ^ w) ((List.range count).map fun i => (stream (i + 1)).toNat),
-      fun i => stream (i + count + 1))
+/-- A natural number is written in base `2 ^ w`, with each digit and marker as a word. -/
+noncomputable instance WordRAM.code (w : ℕ) : Code ℕ (BitVec w) :=
+  letI : Code Bool (BitVec w) := ⟨fun bit => [if bit then 1 else 0], fun stream =>
+    (stream 0 != 0, fun i => stream (i + 1))⟩
+  letI : Code (Fin (2 ^ w)) (BitVec w) := ⟨fun digit => [.ofFin digit], fun stream =>
+    ((stream 0).toFin, fun i => stream (i + 1))⟩
+  Code.digits (2 ^ w)
 
 /-- Word RAM with every operation. -/
 def WordRAM.standard (w : ℕ) :=
