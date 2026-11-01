@@ -1,5 +1,5 @@
 import Formalgo.Core.TDWordRAM
-import Formalgo.Core.Graph
+import Formalgo.Core.Code
 
 /-!
 # Tapes of the word RAM
@@ -77,7 +77,7 @@ theorem one_ne_zero_bitVec (hw : 0 < w) : (1 : BitVec w) ≠ 0 := by
 theorem encode_nat_word (_hw : 0 < w) {v : ℕ} (hv : v < 2 ^ w) :
     (Code.encode v : List (BitVec w)) = triple w v := by
   have hlog : Nat.log (2 ^ w) v = 0 := Nat.log_eq_zero_iff.2 (.inl hv)
-  simp [Code.encode, hlog, triple]
+  simp [Code.encode, hlog, triple]; rfl
 
 theorem decode_nat_word (hw : 0 < w) {v : ℕ} (hv : v < 2 ^ w) (s : ℕ → BitVec w)
     (h0 : s 0 = 1) (h1 : s 1 = BitVec.ofNat w v) (h2 : s 2 = 0) :

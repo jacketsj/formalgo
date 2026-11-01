@@ -98,7 +98,7 @@ theorem listBody_runs {core : Cmd} {f : List ℕ → List ℕ} {t : ℕ → ℕ}
 theorem cube_gt {n : ℕ} (h : 19 ≤ n) : 8 * n + 105 < (n + 2) ^ 3 := by
   have h1 : 21 * 21 ≤ (n + 2) * (n + 2) := Nat.mul_le_mul (by omega) (by omega)
   have h2 : 21 * 21 * (n + 2) ≤ (n + 2) * (n + 2) * (n + 2) := Nat.mul_le_mul_right _ h1
-  rw [pow_succ, pow_succ, pow_one]
+  rw [Nat.pow_succ, Nat.pow_succ, Nat.pow_one]
   omega
 
 set_option maxHeartbeats 1000000 in

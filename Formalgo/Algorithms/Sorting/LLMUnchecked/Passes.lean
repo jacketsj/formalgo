@@ -60,7 +60,7 @@ theorem pass_step {B A jp src dst s : ℕ} {x : List ℕ} {m m' : Mem} (h3 : m 3
   rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR; rstepR
   rename_i m₄ h₄ hf₄ m₅ h₅ hf₅ m₆ h₆ hf₆ m₇ h₇ hf₇ m₈ h₈ hf₈ m₉ h₉ hf₉
   refine ⟨⟨jp + 1, dst, src, .inr (by simpa using hlt), by clear * - hsd; omega, by rsd, by rsd,
-    by rw [pow_succ]; rsd, by rw [pow_succ]; rsd, fun t ht => ?_,
+    by rw [Nat.pow_succ]; rsd, by rw [Nat.pow_succ]; rsd, fun t ht => ?_,
     ⟨by rsd, by rsd, by rsd, by rsd, by rsd, by rsd, by rsd, by rsd⟩, fun a ha ha' => ?_, ?_⟩, ?_⟩
   · have := harr t (by rw [length_mergePass]; rwa [length_passes] at ht ⊢)
     rw [hf₉ _ (by clear * - hsd hA; omega), hf₈ _ (by clear * - hsd hA; omega),

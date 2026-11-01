@@ -80,13 +80,6 @@ instance singleIntCell : Code ℕ ℤ where
   encode n := [n]
   decode stream := ((stream 0).toNat, fun i => stream (i + 1))
 
-/-- `⊤` is written as `0`, and `n : ℕ` as `n + 1`. -/
-instance enat [Code ℕ Value] : Code ℕ∞ Value where
-  encode d := encode (if d = ⊤ then 0 else d.toNat + 1)
-  decode stream :=
-    let (k, stream) : ℕ × _ := decode stream
-    (if k = 0 then ⊤ else (k - 1 : ℕ), stream)
-
 end Code
 
 /-- How inputs are written to a tape, and how outputs are read from it. -/
