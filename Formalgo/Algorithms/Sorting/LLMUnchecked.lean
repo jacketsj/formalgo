@@ -2,7 +2,6 @@ import Mathlib.Data.Fintype.Basic
 import Mathlib.Tactic.Ring
 import Formalgo.Core.TDWordRAM
 import Formalgo.Core.Code
-import Formalgo.Algorithms.Sorting.Statement
 
 /-!
 # Proof that a TD word RAM sorts in `O(n log n)` steps
@@ -3328,7 +3327,8 @@ theorem core_spec : CoreSpec core sortList coreTime := by
         f₆ _ (by omega), hfr b hb hb']
     · simp only [coreTime]; clear * - hs hs8; omega
 
-theorem sortList_valid (x : List ℕ) : sorting.valid x (sortList x) := by
+theorem sortList_valid (x : List ℕ) :
+    (sortList x).Perm x ∧ (sortList x).Pairwise (· ≤ ·) := by
   refine ⟨passes_perm _ x, ?_⟩
   have h := (runsSorted_passes (le := nle) (fun a b c h₁ h₂ => by simp [nle] at *; omega)
     (fun a b => by simp [nle]; omega) (Nat.clog 2 x.length) x).pairwise
@@ -3355,9 +3355,13 @@ theorem time_bound (n : ℕ) : coreTime n + 43 * n + 400 ≤ 500 * n * Nat.log 2
 theorem small_core : Small 8 (listProgram core).lines := by decide +kernel
 
 /-- A TD word RAM with `<`, `+` and `−` sorts in `O(n log n)` steps. -/
-theorem sortsInNLogN : SortsInNLogN :=
+theorem wordRAM (spec : IOSpec (List ℕ) (List ℕ))
+    (hspec : ∀ x y, y.Perm x → y.Pairwise (· ≤ ·) → spec.valid x y) :
+    ∃ c, (tdWordRAM [.less, .add, .sub]).SolvableWithin spec
+      fun list => c * list.length * Nat.log 2 list.length + c :=
   ⟨500, solvableWithin_list (W := 8) (scale := 3) core_spec (fun x => passes_perm _ x)
-    (by omega) (by omega) small_core sorting sortList_valid _
+    (by omega) (by omega) small_core spec
+    (fun x => hspec _ _ (sortList_valid x).1 (sortList_valid x).2) _
     (fun x => time_bound x.length)⟩
 
 end Formalgo.Algorithms.Sorting.MergeSort
