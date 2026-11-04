@@ -1,6 +1,7 @@
+import Mathlib.Data.Fintype.Defs
 import Mathlib.Data.Nat.Find
 import Mathlib.Data.Nat.Log
-import Formalgo.Core.Algorithm
+import Formalgo.Core.Tape
 
 /-!
 # Codes
@@ -80,6 +81,13 @@ instance singleIntCell : Code ℕ ℤ where
   decode stream := ((stream 0).toNat, fun i => stream (i + 1))
 
 end Code
+
+/-- How inputs are written to a tape, and how outputs are read from it. -/
+structure TapeCoding (Input Output Address Value : Type*) where
+  /-- The tape holding an input. -/
+  encode : Input → Tape Address Value
+  /-- The output held by a tape. Note that the tape could also contain other things. -/
+  decode : Tape Address Value → Output
 
 /-- The standard tape coding: the input is written from cell `0`, followed by blanks (`default`),
 and the output is read from just after the input. -/

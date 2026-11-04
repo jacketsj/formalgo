@@ -1,4 +1,4 @@
-import Formalgo.Core.Code
+import Formalgo.Core.Algorithm
 
 /-!
 # Transdichotomous (TD) algorithms
