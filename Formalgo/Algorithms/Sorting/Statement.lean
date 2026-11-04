@@ -16,4 +16,15 @@ theorem sortsInNLogN :
       fun list => c * list.length * Nat.log 2 list.length + c :=
   MergeSort.wordRAM sorting fun _ _ => And.intro
 
+/-- An integer RAM with `<`, `+` and `−` sorts in `O(n log n)` steps, with the standard tape
+coding. -/
+theorem sortsInNLogN_integerRAM :
+    ∃ (c : ℕ) (PC : Type) (_ : Fintype PC) (program : IntegerRAM.withAddSub.Program PC),
+      let A := Algorithm.mk (Address := ℕ) (Value := ℤ) (Input := List ℕ) (Output := List ℕ)
+        program .standard
+      Solves A IntegerRAM.withAddSub.semantics sorting ∧
+        ∀ list : List ℕ, HaltsWithin A IntegerRAM.withAddSub.semantics list
+          (c * list.length * Nat.log 2 list.length + c) :=
+  MergeSort.integerRAM sorting fun _ _ => And.intro
+
 end Formalgo.Algorithms.Sorting
