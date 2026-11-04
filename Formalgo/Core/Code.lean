@@ -6,7 +6,6 @@ import Formalgo.Core.Tape
 /-!
 # Codes
 Model-agnostic ways to write data as a sequence of values, and read it back.
-Tape codings write inputs to a tape, and read outputs from it.
 -/
 
 namespace Formalgo
