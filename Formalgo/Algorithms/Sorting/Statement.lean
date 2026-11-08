@@ -22,4 +22,10 @@ theorem sortsInNLogN_integerRAM :
       fun list => c * list.length * Nat.log 2 list.length + c :=
   MergeSort.integerRAM sorting fun _ _ => And.intro
 
+/-- A real RAM with `<`, `+` and `−` sorts in `O(n log n)` steps. -/
+theorem sortsInNLogN_realRAM :
+    ∃ c, RealRAM.withAddSub.semantics.SolvableWithin sorting
+      fun list => c * list.length * Nat.log 2 list.length + c :=
+  MergeSort.realRAM sorting fun _ _ => And.intro
+
 end Formalgo.Algorithms.Sorting
