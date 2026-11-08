@@ -1,4 +1,5 @@
-import Mathlib.Data.Fintype.Defs
+import Mathlib.Data.Finset.Sort
+import Mathlib.Data.Set.Finite.Basic
 import Mathlib.Data.Nat.Find
 import Mathlib.Data.Nat.Log
 import Formalgo.Core.Tape
@@ -34,6 +35,16 @@ instance prod [Code α Value] [Code β Value] : Code (α × β) Value where
     let (b, stream) : β × _ := decode stream
     ((a, b), stream)
 
+/-- A dependent pair `⟨a, b⟩` is a pair where the type of `b` depends on `a`, e.g. a number `n`
+and a graph on `n` vertices. It is written as its first component, then its second. -/
+instance sigma {β : α → Type*} [Code α Value] [∀ a, Code (β a) Value] :
+    Code (Σ a, β a) Value where
+  encode pair := encode pair.1 ++ encode pair.2
+  decode stream :=
+    let (a, stream) : α × _ := decode stream
+    let (b, stream) : β a × _ := decode stream
+    (⟨a, b⟩, stream)
+
 /-- Read `n` elements from the start of a stream. -/
 def decodeMany [Code α Value] : ℕ → (ℕ → Value) → List α × (ℕ → Value)
   | 0, stream => ([], stream)
@@ -48,6 +59,36 @@ instance list [Code ℕ Value] [Code α Value] : Code (List α) Value where
   decode stream :=
     let (n, stream) : ℕ × _ := decode stream
     decodeMany n stream
+
+/-- The position of `a` in a finite linear order, counting from `0`. -/
+noncomputable def position [Finite α] [LinearOrder α] (a : α) : ℕ :=
+  (Set.finite_univ.toFinset : Finset α).sort.idxOf a
+
+/-- A function on a finite linear order (e.g. a labelling of `Fin n`) is written as the list of its
+values, in increasing order of the argument. -/
+noncomputable instance labels [Finite α] [LinearOrder α] [Inhabited β] [Code (List β) Value] :
+    Code (α → β) Value where
+  encode f := encode ((Set.finite_univ.toFinset : Finset α).sort.map f)
+  decode stream :=
+    let (values, stream) : List β × _ := decode stream
+    (fun a => values.getD (position a) default, stream)
+
+/-- A set in a finite linear order is written as the list of the positions of its elements, in
+increasing order. -/
+noncomputable instance set [Finite α] [LinearOrder α] [Code ℕ Value] : Code (Set α) Value where
+  encode s := encode (s.toFinite.toFinset.sort.map position)
+  decode stream :=
+    let (positions, stream) : List ℕ × _ := decode stream
+    ({a | position a ∈ positions}, stream)
+
+/-- The code that writes data determining each element (`data` is injective), and reads back the
+element with the data read. -/
+noncomputable abbrev ofInj [Nonempty α] [Code β Value] (data : α → β)
+    (_ : Function.Injective data) : Code α Value where
+  encode a := encode (data a)
+  decode stream :=
+    let (b, stream) : β × _ := decode stream
+    (Classical.epsilon fun a => data a = b, stream)
 
 /-- A natural number is written in base `base`, least significant digit first. Each digit is
 preceded by `true`, meaning "a digit follows", and the end by `false`. -/
