@@ -10,7 +10,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : EInput}
 
 theorem cut_spec (hR : Rep L σ m) (hF : Fixed L x m) {rv rp : ℕ} (hv : m rv ≤ L.n)
     (hp : m rp ≤ L.n) (hp0 : m rp ≠ 0) (hd1 : 1 ≤ σ.deg (m rp))

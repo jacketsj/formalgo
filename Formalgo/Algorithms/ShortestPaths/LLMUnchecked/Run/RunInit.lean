@@ -10,7 +10,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {m m' : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {m m' : Mem} {B : ℕ} {x : EInput}
 
 theorem Lst.frame' (hm : ∀ a, L.HE ≤ a → a < L.CH → m' a = m a) :
     ∀ (l : List (ℕ × ℕ)) (h : ℕ), Lst L m h l → Lst L m' h l

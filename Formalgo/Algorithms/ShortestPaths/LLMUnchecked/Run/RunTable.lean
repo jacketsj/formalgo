@@ -11,7 +11,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ : St} {m m' : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {σ : St} {m m' : Mem} {B : ℕ} {x : EInput}
 
 theorem Rep.regs2 (h : Rep L σ m) {r₁ r₂ : ℕ} (h1 : Tmp r₁) (h2 : Tmp r₂) (h1' : r₁ < 32)
     (h2' : r₂ < 32) (hf : ∀ a, a ≠ r₁ → a ≠ r₂ → m' a = m a) : Rep L σ m' :=
@@ -26,7 +26,7 @@ theorem Rep.regs1 (h : Rep L σ m) {r : ℕ} (h1 : Tmp r) (h1' : r < 32)
 def TT (a : ℕ) : Prop := T29 a ∨ a = 11 ∨ a = 13 ∨ a = 14
 
 /-- The table loop's state in memory. -/
-structure TabR (L : Lay) (x : Input) (m₀ : Mem) (P : St × ℕ → Prop) (a : St × ℕ) (m : Mem) :
+structure TabR (L : Lay) (x : EInput) (m₀ : Mem) (P : St × ℕ → Prop) (a : St × ℕ) (m : Mem) :
     Prop where
   rep : Rep L a.1 m
   fixed : Fixed L x m

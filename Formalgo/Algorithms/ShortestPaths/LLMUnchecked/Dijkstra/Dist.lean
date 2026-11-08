@@ -1,4 +1,4 @@
-import Formalgo.Algorithms.ShortestPaths.Statement
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.EInput
 import Mathlib.Combinatorics.SimpleGraph.Walk.Operations
 
 /-!
@@ -21,24 +21,22 @@ noncomputable def WGraph.dist (G : WGraph) (u v : Fin G.n) : ℕ∞ :=
 
 open Classical in
 /-- The graph of an input, with weight `0` off its edges. -/
-noncomputable def Input.wg (x : Input) : WGraph :=
+noncomputable def EInput.wg (x : EInput) : WGraph :=
   ⟨x.n, x.graph, fun e => if h : e ∈ x.graph.edgeSet then x.weight ⟨e, h⟩ else 0⟩
 
-theorem wg_weight (x : Input) {e : Sym2 (Fin x.n)} (h : e ∈ x.graph.edgeSet) :
+theorem wg_weight (x : EInput) {e : Sym2 (Fin x.n)} (h : e ∈ x.graph.edgeSet) :
     x.wg.weight e = x.weight ⟨e, h⟩ := dif_pos h
 
-theorem map_attach_edges {n : ℕ} {G : SimpleGraph (Fin n)} {w : G.edgeSet → ℕ}
-    {f : Sym2 (Fin n) → ℕ} (hf : ∀ e (h : e ∈ G.edgeSet), f e = w ⟨e, h⟩) {u v : Fin n}
-    (p : G.Walk u v) :
-    (p.edges.attach.map fun e => w ⟨e.1, p.edges_subset_edgeSet e.2⟩) = p.edges.map f := by
-  conv_rhs => rw [← List.attach_map_subtype_val p.edges, List.map_map]
-  exact List.map_congr_left fun e _ => (hf _ _).symm
-
-theorem dist_wg (x : Input) (u v : Fin x.n) : x.wg.dist u v = dist x.graph x.weight u v := by
+theorem dist_toE (x : Input) (u v : Fin x.1) :
+    (toE x).wg.dist u v = dist x.2.1 x.2.2.1 u v := by
   refine iInf_congr fun p => ?_
-  have e := map_attach_edges (G := x.graph) (w := x.weight) (f := x.wg.weight)
-    (fun e h => wg_weight x h) p
-  exact (congrArg (fun l : List ℕ => ((l.sum : ℕ) : ℕ∞)) e).symm
+  unfold SimpleGraph.Walk.edges
+  rw [List.map_map]
+  congr 3
+  funext d
+  change (toE x).wg.weight s(d.fst, d.snd) = _
+  rw [wg_weight _ d.adj]
+  exact lexW_eq _ d.adj
 
 variable (G : WGraph)
 

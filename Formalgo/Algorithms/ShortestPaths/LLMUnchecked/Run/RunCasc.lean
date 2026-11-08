@@ -10,7 +10,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : EInput}
 
 /-- The cascade condition's value. -/
 def cascVal (σ : St) (p : ℕ) : ℕ := (if 0 < σ.par p then 1 else 0) + σ.mark p + 1
@@ -62,7 +62,7 @@ theorem TC_tmp {a : ℕ} (h : TC a) : Tmp a := by
   rcases h with (h | h | h) | h | h | h | h <;> simp [Tmp, h]
 
 /-- The cascade's state in memory. -/
-structure CascR (L : Lay) (x : Input) (m₀ : Mem) (M : Finset ℕ) (Q : ℕ) (a : St × ℕ) (m : Mem) :
+structure CascR (L : Lay) (x : EInput) (m₀ : Mem) (M : Finset ℕ) (Q : ℕ) (a : St × ℕ) (m : Mem) :
     Prop where
   rep : Rep L a.1 m
   fixed : Fixed L x m

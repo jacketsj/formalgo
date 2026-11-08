@@ -10,7 +10,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : EInput}
 
 /-- The registers `relaxBody` uses. -/
 def TR (a : ℕ) : Prop := TD a ∨ a = 13 ∨ a = 14 ∨ a = 31

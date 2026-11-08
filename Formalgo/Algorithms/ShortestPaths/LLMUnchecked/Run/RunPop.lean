@@ -10,7 +10,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : EInput}
 
 /-- The registers the pop loop uses. -/
 def TP (a : ℕ) : Prop := TL a ∨ a = 13
@@ -21,7 +21,7 @@ theorem TP_tmp {a : ℕ} (h : TP a) : Tmp a := by
   · simp [Tmp, h]
 
 /-- The pop loop's state in memory. -/
-structure PopR (L : Lay) (x : Input) (m₀ : Mem) (P : St → Prop) (s : St) (m : Mem) : Prop where
+structure PopR (L : Lay) (x : EInput) (m₀ : Mem) (P : St → Prop) (s : St) (m : Mem) : Prop where
   rep : Rep L s m
   fixed : Fixed L x m
   frm : Frm L TP m₀ m

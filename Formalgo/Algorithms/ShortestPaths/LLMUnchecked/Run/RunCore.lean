@@ -1,4 +1,5 @@
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.Run.RunInit
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.Run.RunConv
 
 /-!
 # The pieces of the core
@@ -10,28 +11,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {m : Mem} {B : ℕ} {x : Input}
-
-/-- The list `c` is in memory from `A`. -/
-def MemAt (m : Mem) (A : ℕ) (c : List ℕ) : Prop := ∀ j (h : j < c.length), m (A + j) = c[j]
-
-theorem MemAt.left {A : ℕ} {c d : List ℕ} (h : MemAt m A (c ++ d)) : MemAt m A c := fun j hj => by
-  have := h j (by simp; omega)
-  rwa [List.getElem_append_left hj] at this
-
-theorem MemAt.right {A : ℕ} {c d : List ℕ} (h : MemAt m A (c ++ d)) :
-    MemAt m (A + c.length) d := fun j hj => by
-  have := h (c.length + j) (by simp; omega)
-  rw [List.getElem_append_right (by omega)] at this
-  simpa [Nat.add_assoc] using this
-
-theorem MemAt.head {A a : ℕ} {c : List ℕ} (h : MemAt m A (a :: c)) : m A = a :=
-  h 0 (Nat.succ_pos _)
-
-theorem MemAt.tail {A a : ℕ} {c : List ℕ} (h : MemAt m A (a :: c)) : MemAt m (A + 1) c :=
-  fun j hj => by
-    have := h (j + 1) (by simp; omega)
-    simpa [Nat.add_assoc, Nat.add_comm 1 j] using this
+variable {L : Lay} {m : Mem} {B : ℕ} {x : EInput}
 
 theorem edgesAt_of {α : Type*} (f g h : α → ℕ) : ∀ (l : List α) (p q : ℕ),
     MemAt m p (l.flatMap fun e => [f e, g e]) → MemAt m q (l.map h) →
@@ -43,18 +23,18 @@ theorem edgesAt_of {α : Type*} (f g h : α → ℕ) : ∀ (l : List α) (p q : 
     exact ⟨h1.head, h1.tail.head, h2.head, edgesAt_of f g h l _ _ h1.tail.tail h2.tail⟩
 
 /-- The edges of the input, with their weights. -/
-noncomputable def triX (x : Input) : List (ℕ × ℕ × ℕ) :=
-  (Code.edges x.wg.graph).map fun e => ((e.1 : ℕ), (e.2 : ℕ), x.wg.weight s(e.1, e.2))
+noncomputable def triX (x : EInput) : List (ℕ × ℕ × ℕ) :=
+  (lexEdges x.wg.graph).map fun e => ((e.1 : ℕ), (e.2 : ℕ), x.wg.weight s(e.1, e.2))
 
-theorem flatMap_triX (x : Input) : (triX x).flatMap hfN = halves x := by
+theorem flatMap_triX (x : EInput) : (triX x).flatMap hfN = halves x := by
   simp only [triX, halves, List.flatMap_map, hfN]
 
-theorem adjL_halves (x : Input) (v : ℕ) : adjL ((triX x).flatMap hfN) v = adjX x v := by
+theorem adjL_halves (x : EInput) (v : ℕ) : adjL ((triX x).flatMap hfN) v = adjX x v := by
   rw [flatMap_triX]; rfl
 
-theorem length_triX (x : Input) : (triX x).length = numEdges x := by simp [triX, numEdges]
+theorem length_triX (x : EInput) : (triX x).length = numEdges x := by simp [triX, numEdges]
 
-theorem triX_bound (x : Input) : ∀ t ∈ triX x, t.1 + 1 ≤ x.wg.n ∧ t.2.1 + 1 ≤ x.wg.n := by
+theorem triX_bound (x : EInput) : ∀ t ∈ triX x, t.1 + 1 ≤ x.wg.n ∧ t.2.1 + 1 ≤ x.wg.n := by
   intro t ht
   obtain ⟨e, -, rfl⟩ := List.mem_map.1 ht
   exact ⟨e.1.2, e.2.2⟩
@@ -73,7 +53,7 @@ theorem memAt_input {A : ℕ} (h : MemAt m A (ncode x)) :
   have hl1 : ([x.wg.n, numEdges x] ++
       (edgesNat x.wg.graph).flatMap fun p => [p.1, p.2]).length = 2 + 2 * numEdges x := by
     rw [List.length_append, hp, hE]; rfl
-  have hw : ((Code.edges x.wg.graph).map fun e => x.wg.weight s(e.1, e.2)).length =
+  have hw : ((lexEdges x.wg.graph).map fun e => x.wg.weight s(e.1, e.2)).length =
       numEdges x := by simp [numEdges]
   have a2 := h.left.left.left.left
   have a3 := h.left.left.left.right
@@ -85,10 +65,10 @@ theorem memAt_input {A : ℕ} (h : MemAt m A (ncode x)) :
       A + 3 * numEdges x + 3 := by omega
   rw [e4] at a4
   rw [e5] at a5
-  have a3' : MemAt m (A + 2) ((Code.edges x.wg.graph).flatMap
+  have a3' : MemAt m (A + 2) ((lexEdges x.wg.graph).flatMap
       fun e => [(e.1 : ℕ), (e.2 : ℕ)]) := by
     have e : ((edgesNat x.wg.graph).flatMap fun p => [p.1, p.2]) =
-        (Code.edges x.wg.graph).flatMap fun e => [(e.1 : ℕ), (e.2 : ℕ)] := by
+        (lexEdges x.wg.graph).flatMap fun e => [(e.1 : ℕ), (e.2 : ℕ)] := by
       simp only [edgesNat, List.flatMap_map]
     rw [← e]; exact a3
   exact ⟨a2.head, a2.tail.head, edgesAt_of _ _ _ _ _ _ a3' a4, a5.head⟩
@@ -125,7 +105,7 @@ theorem finish_run {src : ℕ} (hLn : L.n = x.wg.n) (hLD : L.D = Dn x.wg.n)
     exact ⟨m, 1, .loopFalse (by omega) (by omega) hne, hR, hF, Frm.refl, by simp [blank]⟩
 
 /-- The time of the model. -/
-theorem finish_time (x : Input) (src : ℕ) :
+theorem finish_time (x : EInput) (src : ℕ) :
     (finish (ctxX x) src).time ≤ 65 + x.wg.n * perVertex (ctxX x) + 650 * numEdges x := by
   by_cases hs : src < x.wg.n
   · have h := (finish_spec (ctxOK x) (adjOK x) hs).2.2.2
@@ -137,7 +117,7 @@ theorem finish_time (x : Input) (src : ℕ) :
     simp [blank]
 
 /-- The layout for an input at `A`. -/
-noncomputable def layOf (x : Input) (A : ℕ) : Lay :=
+noncomputable def layOf (x : EInput) (A : ℕ) : Lay :=
   ⟨x.wg.n, Dn x.wg.n, numEdges x, A + (ncode x).length⟩
 
 /-- The registers fixed throughout a code program. -/

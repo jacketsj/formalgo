@@ -10,7 +10,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : EInput}
 
 /-- The registers the move loop uses. -/
 def TM (a : ℕ) : Prop := T267 a ∨ a = 11 ∨ a = 13 ∨ a = 14
@@ -19,7 +19,7 @@ theorem TM_tmp {a : ℕ} (h : TM a) : Tmp a := by
   rcases h with (h | h | h) | h | h | h <;> simp [Tmp, h]
 
 /-- The move loop's state in memory. -/
-structure MoveR (L : Lay) (x : Input) (m₀ : Mem) (P : St × ℕ → Prop) (a : St × ℕ) (m : Mem) :
+structure MoveR (L : Lay) (x : EInput) (m₀ : Mem) (P : St × ℕ → Prop) (a : St × ℕ) (m : Mem) :
     Prop where
   rep : Rep L a.1 m
   fixed : Fixed L x m

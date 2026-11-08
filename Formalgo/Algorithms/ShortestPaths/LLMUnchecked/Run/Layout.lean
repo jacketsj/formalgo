@@ -230,7 +230,7 @@ def Lst (L : Lay) (m : Mem) : ℕ → List (ℕ × ℕ) → Prop
   | h, (v, w) :: l => L.HE ≤ h ∧ h + 3 ≤ L.CH ∧ m (h + 1) = v ∧ m (h + 2) = w ∧ Lst L m (m h) l
 
 /-- The adjacency lists and the child-array addresses. -/
-structure Fixed (L : Lay) (x : Input) (m : Mem) : Prop where
+structure Fixed (L : Lay) (x : EInput) (m : Mem) : Prop where
   head : ∀ v ≤ L.n, Lst L m (m (L.H + 7 * L.R + v)) (adjX x v)
   cbv : ∀ v ≤ L.n, m (L.H + 8 * L.R + v) = L.cb v
 
@@ -247,7 +247,7 @@ theorem Lst.frame (H32 : 32 ≤ L.H) (hm : ∀ a, 32 ≤ a → ¬L.Dyn a → m' 
     rw [e h h1 (by omega)]
     exact Lst.frame H32 hm l _ h5
 
-theorem Fixed.frame {x : Input} (hF : Fixed L x m) (H32 : 32 ≤ L.H)
+theorem Fixed.frame {x : EInput} (hF : Fixed L x m) (H32 : 32 ≤ L.H)
     (hm : ∀ a, 32 ≤ a → ¬L.Dyn a → m' a = m a) : Fixed L x m' := by
   have hR : L.H + 9 * L.R ≤ L.HE := by unfold Lay.HE; omega
   have hCH := CH_ge (L := L)

@@ -11,7 +11,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : EInput}
 
 /-- The registers `extractMin` uses. -/
 def TE (a : ℕ) : Prop := TT a ∨ TP a ∨ TM a ∨ a = 12 ∨ a = 30

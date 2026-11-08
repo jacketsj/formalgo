@@ -10,7 +10,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : Input} {C : Ctx} {G : WGraph} {src W : ℕ}
+variable {L : Lay} {σ : St} {m : Mem} {B : ℕ} {x : EInput} {C : Ctx} {G : WGraph} {src W : ℕ}
 
 /-- The registers the main loop uses. -/
 def TW (a : ℕ) : Prop := TE a ∨ TR a
@@ -123,7 +123,7 @@ theorem mainBody_run (hC : CtxOK C) (hA : AdjOK C G W) (hLn : L.n = C.n) (hLD : 
     omega
 
 /-- The main loop's state in memory. -/
-structure MainR (L : Lay) (x : Input) (m₀ : Mem) (P : St → Prop) (a : St) (m : Mem) : Prop where
+structure MainR (L : Lay) (x : EInput) (m₀ : Mem) (P : St → Prop) (a : St) (m : Mem) : Prop where
   inv : P a
   rep : Rep L a m
   fix : Fixed L x m

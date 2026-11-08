@@ -1,5 +1,5 @@
 import Formalgo.Core.TDWordRAM
-import Formalgo.Core.Graph
+import Formalgo.Core.Code
 
 /-!
 # Tapes of the word RAM

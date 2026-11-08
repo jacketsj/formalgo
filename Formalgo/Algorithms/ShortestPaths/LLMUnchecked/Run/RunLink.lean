@@ -11,7 +11,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {σ σ' : St} {m : Mem} {B : ℕ} {x : Input}
+variable {L : Lay} {σ σ' : St} {m : Mem} {B : ℕ} {x : EInput}
 
 /-- Two states agree on everything the memory holds. -/
 structure Same (σ σ' : St) : Prop where
@@ -75,7 +75,7 @@ theorem TL_tmp {a : ℕ} (h : TL a) : Tmp a := by
   rcases h with (h | h | h) | h | h | h | h | h | h <;> simp [Tmp, h]
 
 /-- The link loop's state in memory. -/
-structure LinkR (L : Lay) (x : Input) (m₀ : Mem) (P : St × ℕ × ℕ → Prop) (a : St × ℕ × ℕ)
+structure LinkR (L : Lay) (x : EInput) (m₀ : Mem) (P : St × ℕ × ℕ → Prop) (a : St × ℕ × ℕ)
     (m : Mem) : Prop where
   rep : Rep L a.1 m
   fixed : Fixed L x m

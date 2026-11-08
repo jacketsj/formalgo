@@ -14,7 +14,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 open LLMUnchecked Cmd Function
 
 /-- The number of encoded edges. -/
-noncomputable def numEdges (x : Input) : ℕ := (Code.edges x.wg.graph).length
+noncomputable def numEdges (x : EInput) : ℕ := (lexEdges x.wg.graph).length
 
 theorem flatMap_ncode_pairs (l : List (ℕ × ℕ)) :
     l.flatMap ncode = l.flatMap fun p => [p.1, p.2] := by
@@ -27,14 +27,14 @@ theorem flatMap_ncode_nats (l : List ℕ) : l.flatMap ncode = l := by
   | nil => rfl
   | cons v l ih => rw [List.flatMap_cons, ih, ncode_nat]; rfl
 
-theorem ncode_input_eq (x : Input) : ncode x =
+theorem ncode_input_eq (x : EInput) : ncode x =
     [x.wg.n, numEdges x] ++ (edgesNat x.wg.graph).flatMap (fun p => [p.1, p.2]) ++
-      [numEdges x] ++ (Code.edges x.wg.graph).map (fun e => x.wg.weight s(e.1, e.2)) ++
+      [numEdges x] ++ (lexEdges x.wg.graph).map (fun e => x.wg.weight s(e.1, e.2)) ++
       [x.source] := by
   have h1 : ncode x = ncode (x.wg.n, edgesNat x.wg.graph) ++
-      ncode ((Code.edges x.wg.graph).map fun e => x.wg.weight s(e.1, e.2)) ++
+      ncode ((lexEdges x.wg.graph).map fun e => x.wg.weight s(e.1, e.2)) ++
       ncode x.source := by
-    have e : ncode x = ncode (⟨x.n, x.graph⟩ : Σ n, SimpleGraph (Fin n)) ++
+    have e : ncode x = ncode (x.n, edgesNat x.graph) ++
         ncode ((edgeList x.graph).map x.weight) ++ ncode x.source := rfl
     rw [e, values_eq]
     rfl
@@ -42,7 +42,7 @@ theorem ncode_input_eq (x : Input) : ncode x =
     flatMap_ncode_nats]
   simp [numEdges, edgesNat]
 
-theorem length_ncode_input (x : Input) : (ncode x).length = 3 * numEdges x + 4 := by
+theorem length_ncode_input (x : EInput) : (ncode x).length = 3 * numEdges x + 4 := by
   rw [ncode_input_eq]
   have h : ∀ l : List (ℕ × ℕ), (l.flatMap fun p => [p.1, p.2]).length = 2 * l.length := by
     intro l; induction l with

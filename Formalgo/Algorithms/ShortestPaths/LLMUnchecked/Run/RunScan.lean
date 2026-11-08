@@ -10,7 +10,7 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked Cmd Prog Function
 
-variable {L : Lay} {m : Mem} {B : ℕ} {x : Input} {C : Ctx} {G : WGraph} {src W : ℕ}
+variable {L : Lay} {m : Mem} {B : ℕ} {x : EInput} {C : Ctx} {G : WGraph} {src W : ℕ}
 
 /-- A nonzero head means a nonempty list. -/
 theorem Lst.pos (H32 : 32 ≤ L.H) : ∀ {l : List (ℕ × ℕ)} {h : ℕ}, Lst L m h l → (0 < h ↔ l ≠ [])
@@ -21,7 +21,7 @@ theorem Lst.pos (H32 : 32 ≤ L.H) : ∀ {l : List (ℕ × ℕ)} {h : ℕ}, Lst 
     simp only [ne_eq, reduceCtorEq, not_false_eq_true, iff_true]; omega
 
 /-- The scan's state in memory. -/
-structure ScanR (L : Lay) (x : Input) (m₀ : Mem) (P : St × ℕ × List (ℕ × ℕ) → Prop)
+structure ScanR (L : Lay) (x : EInput) (m₀ : Mem) (P : St × ℕ × List (ℕ × ℕ) → Prop)
     (a : St × ℕ × List (ℕ × ℕ)) (m : Mem) : Prop where
   inv : P a
   rep : Rep L a.1 m
