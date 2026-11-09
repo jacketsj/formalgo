@@ -135,8 +135,6 @@ theorem not_dyn {a : ℕ} (h : a < L.H) : ¬L.Dyn a := fun hd => by
 
 theorem core_run {S A : ℕ} (hR : CodeRegs S (ncode x).length A m) (hA : 32 ≤ A)
     (hTop : (layOf x A).top < B) (hKB : (x.wg.n + 1) * codeMax (ncode x) < B)
-    (hk : ∀ v, 1 ≤ v → v ≤ x.wg.n → (finish (ctxX x) x.source).stat v = 2 →
-      (finish (ctxX x) x.source).key v + 1 < B)
     (hM : MemAt m A (ncode x)) (hz : ∀ a, A + (ncode x).length ≤ a → m a = 0) :
     Runs B Prog.core m fun m' k => CodeRegs S (ncode x).length A m' ∧
       m' 10 = (layOf x A).H + 9 * (layOf x A).R ∧ m' 17 = x.wg.n + 1 ∧
@@ -202,7 +200,7 @@ theorem core_run {S A : ℕ} (hR : CodeRegs S (ncode x).length A m) (hA : 32 ≤
   -- The main loop and the output.
   refine Runs.seqs_cons (Runs.mono (finish_run hLn hLD hKB hTop R₆ X₆ h12)
     fun m₇ c₇ ⟨R₇, X₇, F₇, hc₇⟩ => ?_)
-  refine Runs.seqs_cons (Runs.mono (output_run R₇ (fun v h1 h2 hs => hk v h1 (by omega) hs) hTop)
+  refine Runs.seqs_cons (Runs.mono (output_run R₇ hTop)
     fun m₈ c₈ ⟨R₈, a17, a0, aO, alo, ahi, hc₈⟩ => ?_)
   refine Runs.seqs_nilR (rB (by decide)) fun m₉ g₉ f₉ => ?_
   have keep : ∀ {r}, Fx r → m₉ r = m r := fun {r} h => by

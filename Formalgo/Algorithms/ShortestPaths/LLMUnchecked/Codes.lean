@@ -11,33 +11,14 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked
 
-/-- The number writing a distance. -/
-def encDist (d : ℕ∞) : ℕ := if d = ⊤ then 0 else d.toNat + 1
+/-- The number written for a distance: the distance, or `0` for `⊤`. -/
+def encDist (d : ℕ∞) : ℕ := d.toNat
 
-theorem ncode_enat (d : ℕ∞) : ncode d = [encDist d] := rfl
-
-theorem layout_enat (d : ℕ∞) : Layout d := layout_nat (encDist d)
-
-theorem encDist_injective : Function.Injective encDist := fun a b h => by
-  induction a using ENat.recTopCoe <;> induction b using ENat.recTopCoe <;> simp_all [encDist]
-
-theorem readsBack_enat (d : ℕ∞) : ReadsBack d := fun w hw hf s hs => by
-  have h := readsBack_nat (encDist d) w hw hf s hs
-  change (let (k, stream) : ℕ × _ := Code.decode s
-    (Classical.epsilon fun a : ℕ∞ => encDist a = k, stream)) = _
-  rw [h]
-  exact Prod.ext (encDist_injective (Classical.epsilon_spec
-    (p := fun a : ℕ∞ => encDist a = encDist d) ⟨d, rfl⟩)) rfl
-
-theorem layout_output (y : List ℕ∞) : Layout y := layout_list fun d _ => layout_enat d
-
-theorem readsBack_output (y : List ℕ∞) : ReadsBack y := readsBack_list fun d _ => readsBack_enat d
-
-theorem ncode_output (y : List ℕ∞) : ncode y = y.length :: y.map encDist := by
-  rw [ncode_list]; congr 1
+theorem ncode_output (y : List ℕ∞) : ncode (y.map encDist) = y.length :: y.map encDist := by
+  rw [ncode_list, List.length_map]; congr 1
   induction y with
   | nil => rfl
-  | cons d y ih => rw [List.flatMap_cons, ih, ncode_enat]; rfl
+  | cons d y ih => rw [List.map_cons, List.flatMap_cons, ih]; rfl
 
 /-! ### The edge list -/
 

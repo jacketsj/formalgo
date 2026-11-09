@@ -9,7 +9,7 @@ A model loop runs `f` while `c` holds, for at most `N` rounds. A command loop fo
 body follows `f` under a relation `R`, with the model's clock `T` paying for the steps.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 /-- Run `f` while `c` holds, at most `N` times. -/
 def whileF {α : Type*} (c : α → Prop) [DecidablePred c] (f : α → α) : ℕ → α → α
@@ -79,4 +79,4 @@ theorem loop_refine {B l r : ℕ} {body : Cmd} {α : Type*} (R : α → Mem → 
 
 end Runs
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

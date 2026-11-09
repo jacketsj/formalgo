@@ -9,7 +9,7 @@ A code program loads the code of its input into the array at `A`, runs a core th
 code of the output into an array at `Z`, and writes it out.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 open Function Cmd
 
@@ -352,4 +352,4 @@ theorem solvableWithin_code {setS lenC core : Cmd} {f : I → O} {t need Sf : I 
     fun x => haltsWithin_mono _ (code_outputs hcore hlen hset hlay hskip hlayO hread hne hW hscale
       hsmall x (hS x) (hneed x) (hbig x) (hfy x)).2 (htime x)⟩
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

@@ -36,7 +36,7 @@ theorem Rep.keep {σ : St} {m' : Mem} (h : Rep L σ m) (hm : ∀ a, ¬Tmp a → 
 
 /-- Write the output of vertex `v`, and move on. -/
 theorem outBody_spec (hR : Rep L t m) {v : ℕ} (h11 : m 11 = v) (h1 : 1 ≤ v) (hv : v ≤ L.n)
-    (hk : t.stat v = 2 → t.key v + 1 < B) (hB : L.top < B) :
+    (hB : L.top < B) :
     Runs B outBody m fun m' k => Rep L t m' ∧ m' 11 = v + 1 ∧
       m' 12 = (if L.n < v + 1 then 1 else 0) ∧ m' (L.H + 9 * L.R + v) = outVal t v ∧
       (∀ a, a < 32 → ¬TO a → m' a = m a) ∧
@@ -58,8 +58,8 @@ theorem outBody_spec (hR : Rep L t m) {v : ℕ} (h11 : m 11 = v) (h1 : 1 ≤ v) 
   have R₂ := R₁.regs1 (r := 6) (by simp [Tmp]) (by omega) f₂
   have e11 : m₂ 11 = v := by rw [f₂ 11 (by omega), f₁ 11 (by omega) (by omega), h11]
   have e13 : m₂ 13 = t.stat v := by rw [f₂ 13 (by omega), g₁]
-  -- The value: `key + 1` for a settled vertex, or `0`.
-  have hval : Runs B (ite 13 6 (seqs [rd 14 0 11, add 14 14 3]) (const 14 0)) m₂ fun m₃ c =>
+  -- The value: `key` for a settled vertex, or `0`.
+  have hval : Runs B (ite 13 6 (seqs [rd 14 0 11]) (const 14 0)) m₂ fun m₃ c =>
       m₃ 14 = outVal t v ∧ (∀ a, a ≠ 2 → a ≠ 14 → m₃ a = m₂ a) ∧ c ≤ 6 := by
     refine Runs.ite (by omega) (by omega) (fun hs => ?_) (fun hs => ?_)
     · rw [e13, g₂] at hs
@@ -69,13 +69,10 @@ theorem outBody_spec (hR : Rep L t m) {v : ℕ} (h11 : m 11 = v) (h1 : 1 ≤ v) 
         fun m₃ c₃ ⟨g₃, f₃, hc₃⟩ => ?_)
       rw [e11] at g₃
       replace g₃ : m₃ 14 = t.key v := g₃
-      have o₃ : m₃ 3 = 1 := by rw [f₃ 3 (by omega) (by omega), R₂.one]
-      refine Runs.seqs_cons (Runs.addR (by omega) (by omega) (by omega)
-        (by rw [g₃, o₃]; exact hk hs') fun m₄ g₄ f₄ => ?_)
       refine Runs.seqs_nilR (by omega) fun m₅ g₅ f₅ => ?_
       refine ⟨?_, fun a h2 h14 => ?_, by omega⟩
-      · rw [f₅ 14 (by omega), g₄, g₃, o₃]; simp [outVal, hs']
-      · rw [f₅ a h2, f₄ a h14, f₃ a h2 h14]
+      · rw [f₅ 14 (by omega), g₃]; simp [outVal, hs']
+      · rw [f₅ a h2, f₃ a h2 h14]
     · rw [e13, g₂] at hs
       have hs' : t.stat v ≠ 2 := hs
       refine Runs.constR (by omega) (by omega) fun m₃ g₃ f₃ => ?_
@@ -127,8 +124,7 @@ theorem outBody_spec (hR : Rep L t m) {v : ℕ} (h11 : m 11 = v) (h1 : 1 ≤ v) 
       f₁ a (by omega) (by omega)]
 
 /-- The output: `n`, then each vertex's value. -/
-theorem output_run (hR : Rep L t m) (hk : ∀ v, 1 ≤ v → v ≤ L.n → t.stat v = 2 → t.key v + 1 < B)
-    (hB : L.top < B) :
+theorem output_run (hR : Rep L t m) (hB : L.top < B) :
     Runs B output m fun m' k => Rep L t m' ∧ m' 17 = L.n + 1 ∧ m' (L.H + 9 * L.R) = L.n ∧
       (∀ v, 1 ≤ v → v ≤ L.n → m' (L.H + 9 * L.R + v) = outVal t v) ∧
       (∀ a, a < 32 → ¬TO a → m' a = m a) ∧
@@ -176,7 +172,7 @@ theorem output_run (hR : Rep L t m) (hk : ∀ v, 1 ≤ v → v ≤ L.n → t.sta
     have hvn : v ≤ L.n := by
       rw [e12, Rv.zero] at heq
       by_contra hn; simp [show L.n < v by omega] at heq
-    refine Runs.mono (outBody_spec Rv e11 h1 hvn (hk v h1 hvn) hB)
+    refine Runs.mono (outBody_spec Rv e11 h1 hvn hB)
       fun m₄ k ⟨R₄, a11, a12, a0, alo, ahi, hk'⟩ => ⟨⟨v + 1, by omega, by omega, R₄, a11, a12, ?_,
         fun j h1' h2 => ?_, fun a ha hT => ?_, fun a ha hr => ?_, ?_⟩, ?_⟩
     · rw [ahi _ (by omega) (by omega), e0]

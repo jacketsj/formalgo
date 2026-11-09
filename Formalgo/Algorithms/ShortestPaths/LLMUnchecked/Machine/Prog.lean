@@ -9,7 +9,7 @@ Fixed registers, and the memory a body sees: cells below `nK` come from the buff
 that registers are separate from it.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 open Function Cmd
 
@@ -418,4 +418,4 @@ theorem exec_harness_vm {B S N : ℕ} {setS body : Cmd} {m₀ m₁ : Mem} {k₀ 
     have := hfin a (by omega) (by omega) (by omega)
     simpa [vm, show ¬ a < 32 by omega, show ¬ (S ≤ a ∧ a < S + 32) by omega] using this
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

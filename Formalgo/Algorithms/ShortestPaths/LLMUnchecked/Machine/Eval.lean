@@ -8,7 +8,7 @@ LLM-generated; not checked by a human.
 `eval` runs loop-free commands directly; loops are handled with an invariant and a measure.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 open Function
 
@@ -119,4 +119,4 @@ theorem Exec.seq_of {B : ℕ} {a b : Cmd} {m : Mem} (Q : Mem → ℕ → Prop)
   obtain ⟨m₁, k₁, h₁, m₂, k₂, h₂, hQ⟩ := ha
   exact ⟨m₂, k₁ + k₂, .seq h₁ h₂, hQ⟩
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

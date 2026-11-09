@@ -10,7 +10,7 @@ triples in cells `[0, L)`, `L = 3 (ℓ + 1)`. Programs copy `c` into an array at
 the output code `z` (length `μ`) into an array at `Z`, and write it out from `L`.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 open Function Cmd
 
@@ -185,4 +185,4 @@ theorem exec_emitCode {B S ℓ A Z μ : ℕ} {m : Mem} {z : List ℕ} (hz : z.le
       fun a ha1 ha2 => by rw [v₇]; exact hd a ha1 ha2, fun a ha => by rw [v₇]; exact hfr a ha,
       by omega⟩
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

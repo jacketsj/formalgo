@@ -10,7 +10,7 @@ Commands over a memory of natural numbers, compiled to word RAM programs. `Exec`
 meaning with exact costs, and `Exec.run` shows that compiled programs follow it.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 /-- The operations used. -/
 abbrev ops : List WordRAM.Operation := [.less, .add, .sub]
@@ -391,4 +391,4 @@ theorem Exec.run (hw : 0 < w) {c : Cmd} {m : Mem} {k : ℕ} {m' : Mem}
 
 end Exec
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

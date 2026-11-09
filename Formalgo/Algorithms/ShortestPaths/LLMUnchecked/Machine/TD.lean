@@ -10,7 +10,7 @@ A command `c` is a TD word RAM algorithm. If `c` runs from the memory holding th
 the input, and leaves the input followed by the output, the algorithm outputs it.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 /-- The numbers in an instruction. -/
 def NInstr.nums : NInstr → List ℕ
@@ -249,4 +249,4 @@ theorem haltsWithin_mono (c : Cmd) {W scale : ℕ} {x : Input} {a b : ℕ}
 
 end Glue
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

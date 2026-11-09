@@ -11,7 +11,7 @@ For an input list `x` of length `n`, the tape holds `w`, `n` and `x` as triples 
 into an array at `A = S + nK`, transform it, and write it out.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 open Function Cmd
 
@@ -377,4 +377,4 @@ theorem exec_emitLoop {B S n A : ℕ} {m : Mem} {ys : List ℕ} (hn : ys.length 
       simp only [update_apply]
       split_ifs <;> first | rfl | omega
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

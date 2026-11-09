@@ -147,9 +147,9 @@ def cbInit : Cmd := seqs [store 26 13, add 15 13 27, add 15 15 3, add 14 28 3, c
 def source : Cmd := seqs [load 11 17, const 29 0, less 12 11 27,
   ite 12 3 (seqs [add 11 11 3, wr 1 11 3, attach 11 8, updMin 11]) nop]
 
-/-- Write `encDist` of vertex `v` (`11`). -/
+/-- Write the key of vertex `v` (`11`) if it is settled, or `0`. -/
 def outBody : Cmd := seqs [rd 13 1 11, add 6 3 3,
-  ite 13 6 (seqs [rd 14 0 11, add 14 14 3]) (const 14 0), wr 9 11 14, add 11 11 3, less 12 27 11]
+  ite 13 6 (seqs [rd 14 0 11]) (const 14 0), wr 9 11 14, add 11 11 3, less 12 27 11]
 
 /-- Write the output code: `n`, then the distances. -/
 def output : Cmd := seqs [store 10 27, const 11 1, less 12 27 11, loop 12 8 outBody, add 17 27 3]

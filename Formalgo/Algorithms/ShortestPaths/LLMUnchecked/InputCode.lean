@@ -35,6 +35,51 @@ theorem sort_set_fin {n : ℕ} (s : Set (Fin n)) :
       _)) fun a => ?_
   simp
 
+theorem sort_univ_eq {α : Type*} [Finite α] [LinearOrder α] {l : List α}
+    (hl : l.Pairwise (· < ·)) (hmem : ∀ a, a ∈ l) :
+    (Set.finite_univ.toFinset : Finset α).sort = l :=
+  List.SortedLT.eq_of_mem_iff (Finset.sortedLT_sort _) (List.sortedLT_iff_pairwise.2 hl)
+    fun a => by simp [hmem a]
+
+/-! ### Edges in lexicographic order -/
+
+theorem sortEquiv_lex {n : ℕ} {G : SimpleGraph (Fin n)} {e : Fin n × Fin n}
+    (he : e ∈ lexEdges G) : (Sym2.sortEquiv s(e.1, e.2) : Fin n × Fin n) = e := by
+  have h := (mem_edges.1 he).1
+  simp [inf_of_le_left h.le, sup_of_le_right h.le]
+
+theorem pairwise_lexEdges {n : ℕ} (G : SimpleGraph (Fin n)) :
+    ((lexEdges G).map toLex).Pairwise (· < ·) := by
+  have hfr := List.sortedLT_iff_pairwise.1 (List.sortedLT_finRange n)
+  unfold lexEdges
+  rw [List.map_flatMap, List.pairwise_flatMap]
+  refine ⟨fun u _ => ?_, hfr.imp fun {u u'} huu' => ?_⟩
+  · rw [List.map_map, List.pairwise_map]
+    refine (hfr.filter _).imp ?_
+    intro v v' h
+    exact Prod.Lex.toLex_lt_toLex.2 (.inr ⟨rfl, h⟩)
+  · intro a ha b hb
+    simp only [List.map_map, List.mem_map, Function.comp_apply] at ha hb
+    obtain ⟨v, -, rfl⟩ := ha
+    obtain ⟨v', -, rfl⟩ := hb
+    exact Prod.Lex.toLex_lt_toLex.2 (.inl huu')
+
+theorem edgeList_pairwise {n : ℕ} (G : SimpleGraph (Fin n)) :
+    (edgeList G).Pairwise fun a b =>
+      toLex (Sym2.sortEquiv a.1 : Fin n × Fin n) < toLex (Sym2.sortEquiv b.1 : Fin n × Fin n) := by
+  have h : (lexEdges G).Pairwise fun a b => a ∈ lexEdges G ∧ b ∈ lexEdges G ∧ toLex a < toLex b :=
+    (List.pairwise_map.1 (pairwise_lexEdges G)).imp_of_mem fun ha hb h => ⟨ha, hb, h⟩
+  unfold edgeList
+  refine h.filterMap _ fun a b ⟨ha, hb, hab⟩ a' ha' b' hb' => ?_
+  have hma : s(a.1, a.2) ∈ G.edgeSet := (mem_edges.1 ha).2
+  have hmb : s(b.1, b.2) ∈ G.edgeSet := (mem_edges.1 hb).2
+  simp only [hma, hmb, ↓reduceDIte, Option.some.injEq] at ha' hb'
+  subst ha' hb'
+  change toLex (Sym2.sortEquiv s(a.1, a.2) : Fin n × Fin n) <
+    toLex (Sym2.sortEquiv s(b.1, b.2) : Fin n × Fin n)
+  rw [sortEquiv_lex ha, sortEquiv_lex hb]
+  exact hab
+
 /-! ### Codes as tuples -/
 
 /-- The neighbours of `u`, in increasing order. -/
@@ -47,8 +92,7 @@ noncomputable def nbrLists {n : ℕ} (G : SimpleGraph (Fin n)) : List (List ℕ)
   (List.finRange n).map (nbrs G)
 
 /-- The weights, in increasing order of the edges. -/
-noncomputable def wts (x : Input) : List ℕ :=
-  ((Set.finite_univ.toFinset : Finset (Edges x.2.1)).sort).map x.2.2.1
+noncomputable def wts (x : Input) : List ℕ := (edgeList x.2.1).map x.2.2.1
 
 /-- The parts of the code of an input. -/
 noncomputable def inT (x : Input) : ℕ × List (List ℕ) × List ℕ × ℕ :=
@@ -79,15 +123,21 @@ theorem encode_graph_fin {n : ℕ} (G : SimpleGraph (Fin n)) :
   congr 1
   exact List.flatMap_congr fun u _ => encode_set_fin (G.neighborSet u)
 
+theorem encode_weights {n : ℕ} (G : SimpleGraph (Fin n)) (w : G.edgeSet → ℕ) :
+    (Code.encode w : List V) = Code.encode ((edgeList G).map w) := by
+  letI := Code.sym2LinearOrder (Fin n)
+  exact congrArg (fun l : List G.edgeSet => (Code.encode (l.map w) : List V))
+    (sort_univ_eq (α := G.edgeSet) (edgeList_pairwise G) (mem_edgeList (G := G)))
+
 theorem encode_input (x : Input) : (Code.encode x : List V) = Code.encode (inT x) := by
   obtain ⟨n, G, w, s⟩ := x
   change (Code.encode n : List V) ++ ((Code.encode G : List V) ++
-      ((Code.encode (wts ⟨n, G, w, s⟩) : List V) ++ (Code.encode s : List V))) =
+      ((Code.encode w : List V) ++ (Code.encode s : List V))) =
     (Code.encode n : List V) ++ ((Code.encode (nbrLists G) : List V) ++
       ((Code.encode (wts ⟨n, G, w, s⟩) : List V) ++ (Code.encode s : List V)))
-  rw [encode_graph_fin]
+  rw [encode_graph_fin, encode_weights]; rfl
 
-theorem encode_output (y : Σ n, Fin n → ℕ∞) :
+theorem encode_output (y : Σ n, Fin n → ℕ) :
     (Code.encode y : List V) = Code.encode (y.1, (List.finRange y.1).map y.2) := by
   obtain ⟨n, d⟩ := y
   change (Code.encode n : List V) ++
@@ -100,10 +150,10 @@ theorem ncode_input (x : Input) : ncode x = ncode (inT x) := encode_input x
 
 theorem wcode_input (w : ℕ) (x : Input) : wcode w x = wcode w (inT x) := encode_input x
 
-theorem ncode_out (y : Σ n, Fin n → ℕ∞) : ncode y = ncode (y.1, (List.finRange y.1).map y.2) :=
+theorem ncode_out (y : Σ n, Fin n → ℕ) : ncode y = ncode (y.1, (List.finRange y.1).map y.2) :=
   encode_output y
 
-theorem wcode_out (w : ℕ) (y : Σ n, Fin n → ℕ∞) :
+theorem wcode_out (w : ℕ) (y : Σ n, Fin n → ℕ) :
     wcode w y = wcode w (y.1, (List.finRange y.1).map y.2) := encode_output y
 
 /-! ### Decoding -/
@@ -137,9 +187,9 @@ theorem decode_graph_snd {n : ℕ} (s : ℕ → V) :
   exact decodeMany_snd (α := Set (Fin n)) (β := List ℕ) (fun _ => rfl) _ _
 
 theorem decode_rest_snd {n : ℕ} (s : ℕ → V) :
-    (Code.decode s : (Σ G : SimpleGraph (Fin n), (Edges G → ℕ) × ℕ) × _).2 =
+    (Code.decode s : (Σ G : SimpleGraph (Fin n), (G.edgeSet → ℕ) × ℕ) × _).2 =
       (Code.decode s : (List (List ℕ) × List ℕ × ℕ) × _).2 := by
-  rw [decode_sigma (V := V) (α := SimpleGraph (Fin n)) (β := fun G => (Edges G → ℕ) × ℕ) s,
+  rw [decode_sigma (V := V) (α := SimpleGraph (Fin n)) (β := fun G => (G.edgeSet → ℕ) × ℕ) s,
     decode_prod (α := List (List ℕ)) (β := List ℕ × ℕ) s,
     decode_prod (α := List ℕ) (β := ℕ) (V := V)]
   change (Code.decode (Code.decode (Code.decode s : SimpleGraph (Fin n) × (ℕ → V)).2 :
@@ -168,30 +218,31 @@ theorem skips_input (x : Input) : Skips x := fun w hw hf s hs => by
   have h := (readsBack_inT x).skips w hw hf s hs
   rw [decode_prod] at h
   rw [decode_sigma (V := BitVec w) (α := ℕ)
-    (β := fun n => Σ G : SimpleGraph (Fin n), (Edges G → ℕ) × ℕ) s]
+    (β := fun n => Σ G : SimpleGraph (Fin n), (G.edgeSet → ℕ) × ℕ) s]
   change (Code.decode (Code.decode s : ℕ × _).2 :
-    (Σ G : SimpleGraph (Fin (Code.decode s : ℕ × _).1), (Edges G → ℕ) × ℕ) × _).2 = _
+    (Σ G : SimpleGraph (Fin (Code.decode s : ℕ × _).1), (G.edgeSet → ℕ) × ℕ) × _).2 = _
   rw [decode_rest_snd]
   exact h
 
-theorem fits_out {w : ℕ} {y : Σ n, Fin n → ℕ∞} :
+theorem fits_out {w : ℕ} {y : Σ n, Fin n → ℕ} :
     Fits w y ↔ Fits w (y.1, (List.finRange y.1).map y.2) := by
   unfold Fits; rw [ncode_out]
 
-theorem layout_out (y : Σ n, Fin n → ℕ∞) : Layout y := fun w hw hf => by
+theorem layout_out (y : Σ n, Fin n → ℕ) : Layout y := fun w hw hf => by
   rw [wcode_out, ncode_out]
-  exact ((layout_nat _).prod (layout_output _)) w hw (fits_out.1 hf)
+  exact ((layout_nat _).prod (layout_list fun _ _ => layout_nat _)) w hw (fits_out.1 hf)
 
-theorem readsBack_out (y : Σ n, Fin n → ℕ∞) : ReadsBack y := fun w hw hf s hs => by
+theorem readsBack_out (y : Σ n, Fin n → ℕ) : ReadsBack y := fun w hw hf s hs => by
   obtain ⟨n, d⟩ := y
   rw [fits_out, fits_prod] at hf
   rw [wcode_out, wcode_prod] at hs ⊢
   have h₁ := readsBack_nat n w hw hf.1 s hs.append_left
-  have h₂ := readsBack_output ((List.finRange n).map d) w hw hf.2 _ hs.append_right
-  rw [decode_sigma (V := BitVec w) (α := ℕ) (β := fun n => Fin n → ℕ∞) s, h₁]
+  have h₂ := (readsBack_list (l := (List.finRange n).map d) fun _ _ => readsBack_nat _) w hw hf.2 _
+    hs.append_right
+  rw [decode_sigma (V := BitVec w) (α := ℕ) (β := fun n => Fin n → ℕ) s, h₁]
   change ((⟨n, fun a => ((Code.decode (fun i => s (i + (wcode w n).length)) :
-      List ℕ∞ × (ℕ → BitVec w)).1).getD (Code.position a) default⟩ : Σ n, Fin n → ℕ∞),
-    (Code.decode (fun i => s (i + (wcode w n).length)) : List ℕ∞ × (ℕ → BitVec w)).2) = _
+      List ℕ × (ℕ → BitVec w)).1).getD (Code.position a) default⟩ : Σ n, Fin n → ℕ),
+    (Code.decode (fun i => s (i + (wcode w n).length)) : List ℕ × (ℕ → BitVec w)).2) = _
   rw [h₂]
   refine Prod.ext ?_ ?_
   · simp only
@@ -259,68 +310,17 @@ theorem length_pairs (l : List (ℕ × ℕ)) : (l.flatMap fun p => [p.1, p.2]).l
 
 /-! ### The weights in lexicographic order -/
 
-theorem mem_lexEdges_map {n : ℕ} (G : SimpleGraph (Fin n)) (p : Fin n ×ₗ Fin n) :
-    p ∈ (lexEdges G).map toLex ↔ p ∈ Edges G := by
-  constructor
-  · rintro h
-    obtain ⟨e, he, rfl⟩ := List.mem_map.1 h
-    exact mem_edges.1 he
-  · intro h
-    exact List.mem_map.2 ⟨ofLex p, mem_edges.2 h, rfl⟩
-
-theorem pairwise_lexEdges {n : ℕ} (G : SimpleGraph (Fin n)) :
-    ((lexEdges G).map toLex).Pairwise (· < ·) := by
-  have hfr := List.sortedLT_iff_pairwise.1 (List.sortedLT_finRange n)
-  unfold lexEdges
-  rw [List.map_flatMap, List.pairwise_flatMap]
-  refine ⟨fun u _ => ?_, hfr.imp fun {u u'} huu' => ?_⟩
-  · rw [List.map_map, List.pairwise_map]
-    refine (hfr.filter _).imp ?_
-    intro v v' h
-    exact Prod.Lex.toLex_lt_toLex.2 (.inr ⟨rfl, h⟩)
-  · intro a ha b hb
-    simp only [List.map_map, List.mem_map, Function.comp_apply] at ha hb
-    obtain ⟨v, -, rfl⟩ := ha
-    obtain ⟨v', -, rfl⟩ := hb
-    exact Prod.Lex.toLex_lt_toLex.2 (.inl huu')
-
-theorem sort_edges_val {n : ℕ} (G : SimpleGraph (Fin n)) :
-    ((Set.finite_univ.toFinset : Finset (Edges G)).sort).map Subtype.val =
-      (lexEdges G).map toLex := by
-  refine List.SortedLT.eq_of_mem_iff ?_ (List.sortedLT_iff_pairwise.2 (pairwise_lexEdges G))
-    fun p => ?_
-  · refine List.sortedLT_iff_pairwise.2 ?_
-    rw [List.pairwise_map]
-    exact (List.sortedLT_iff_pairwise.1 (Finset.sortedLT_sort _)).imp fun h => h
-  · rw [mem_lexEdges_map]
-    simp only [List.mem_map, Finset.mem_sort, Set.Finite.mem_toFinset, Set.mem_univ, true_and]
-    exact ⟨fun ⟨q, hq⟩ => hq ▸ q.2, fun h => ⟨⟨p, h⟩, rfl⟩⟩
-
-theorem toE_weight (x : Input) {e : Fin x.1 × Fin x.1} (he : e ∈ lexEdges x.2.1) :
-    (toE x).wg.weight s(e.1, e.2) = x.2.2.1 ⟨toLex e, mem_edges.1 he⟩ := by
-  have he' := mem_edges.1 he
-  refine (wg_weight (toE x) (e := s(e.1, e.2)) he'.2).trans ?_
-  change lexW x.2.2.1 s(e.1, e.2) = _
-  exact (lexW_eq x.2.2.1 he'.2).trans (dif_pos he'.1)
-
 theorem wts_eq (x : Input) :
     (lexEdges (toE x).wg.graph).map (fun e => (toE x).wg.weight s(e.1, e.2)) = wts x := by
-  classical
   obtain ⟨n, G, w, src⟩ := x
-  let wf : Fin n ×ₗ Fin n → ℕ := fun p => if h : p ∈ Edges G then w ⟨p, h⟩ else 0
-  have h1 : wts ⟨n, G, w, src⟩ = (lexEdges G).map (wf ∘ toLex) := by
-    have : wts ⟨n, G, w, src⟩ = (((Set.finite_univ.toFinset : Finset (Edges G)).sort).map
-        Subtype.val).map wf := by
-      rw [List.map_map]
-      exact List.map_congr_left fun e _ => by
-        simp only [Function.comp_apply, wf, dif_pos e.2, Subtype.coe_eta]
-    rw [this, sort_edges_val, List.map_map]
-  rw [h1]
-  refine List.map_congr_left fun (e : Fin n × Fin n) he => ?_
-  have h2 : toLex e ∈ Edges G := mem_edges.1 he
-  refine (toE_weight ⟨n, G, w, src⟩ he).trans ?_
-  simp only [Function.comp_apply, wf]
-  rw [dif_pos h2]
+  change (lexEdges G).map (fun e => (toE ⟨n, G, w, src⟩).wg.weight s(e.1, e.2)) =
+    (edgeList G).map w
+  unfold edgeList
+  rw [List.map_filterMap, ← List.filterMap_eq_map]
+  refine List.filterMap_congr fun e he => ?_
+  have hm : s(e.1, e.2) ∈ G.edgeSet := (mem_edges.1 he).2
+  simp only [Function.comp_apply, hm, ↓reduceDIte, Option.map_some]
+  exact congrArg some (wg_weight (toE ⟨n, G, w, src⟩) hm)
 
 theorem length_wts (x : Input) : (wts x).length = (lexEdges (toE x).wg.graph).length := by
   rw [← wts_eq, List.length_map]

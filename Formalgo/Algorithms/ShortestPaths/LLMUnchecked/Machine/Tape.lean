@@ -10,7 +10,7 @@ When every number fits in a word, the word RAM code of a value is its code over 
 with each number `v` written as `[1, v, 0]`; decoding reads it back.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 open Code
 
@@ -300,4 +300,4 @@ theorem standard_decode {I O : Type*} [Code I ℕ] [∀ w, Code I (BitVec w)] [C
 
 end Standard
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

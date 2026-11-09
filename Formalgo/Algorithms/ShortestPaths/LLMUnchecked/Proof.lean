@@ -21,6 +21,9 @@ noncomputable def spf (x : EInput) : List ℕ∞ :=
 theorem length_spf (x : EInput) : (spf x).length = x.wg.n := by
   unfold spf; split <;> simp
 
+/-- The numbers the core writes for the distances. -/
+noncomputable def spo (x : EInput) : List ℕ := (spf x).map encDist
+
 /-- The memory the core uses from `A`. -/
 noncomputable def needF (x : EInput) : ℕ :=
   let n := x.wg.n; let E := numEdges x
@@ -53,8 +56,8 @@ theorem encDist_le (x : EInput) : ∀ d ∈ spf x,
 
 /-! ### Bounds -/
 
-theorem ncode_spf (x : EInput) : ncode (spf x) = x.wg.n :: (spf x).map encDist := by
-  rw [ncode_output, length_spf]
+theorem ncode_spf (x : EInput) : ncode (spo x) = x.wg.n :: (spf x).map encDist := by
+  rw [spo, ncode_output, length_spf]
 
 theorem n_le_codeMax (x : EInput) : x.wg.n ≤ codeMax (ncode x) :=
   le_codeMax (by rw [ncode_input_eq]; simp)
@@ -80,9 +83,9 @@ theorem poly_lt {M w : ℕ} (hw : 16 ≤ w) (hM : (M + 1) ^ 4 ≤ 2 ^ w) :
 /-! ### The core -/
 
 theorem out_eq (x : EInput) {j : ℕ} (hj : j < x.wg.n) :
-    outVal (finish (ctxX x) x.source) (j + 1) = (ncode (spf x))[j + 1]! := by
-  have hl : j + 1 < (ncode (spf x)).length := by rw [ncode_spf]; simp [length_spf, hj]
-  rw [getElem!_pos (ncode (spf x)) (j + 1) hl]
+    outVal (finish (ctxX x) x.source) (j + 1) = (ncode (spo x))[j + 1]! := by
+  have hl : j + 1 < (ncode (spo x)).length := by rw [ncode_spf]; simp [length_spf, hj]
+  rw [getElem!_pos (ncode (spo x)) (j + 1) hl]
   simp only [ncode_spf, List.getElem_cons_succ, List.getElem_map]
   by_cases hs : x.source < x.wg.n
   · obtain ⟨-, -, hout, -⟩ := finish_spec (ctxOK x) (adjOK x) hs
@@ -91,17 +94,6 @@ theorem out_eq (x : EInput) {j : ℕ} (hj : j < x.wg.n) :
     exact this
   · rw [finish_invalid (show (ctxX x).n ≤ x.source by change x.wg.n ≤ _; omega)]
     simp [spf, dif_neg hs, outVal, blank, encDist]
-
-theorem key_lt (x : EInput) {B : ℕ} (hB : codeMax (ncode x) * codeMax (ncode x) + 1 < B) (v : ℕ)
-    (hv : (finish (ctxX x) x.source).stat v = 2) : (finish (ctxX x) x.source).key v + 1 < B := by
-  by_cases hs : x.source < x.wg.n
-  · obtain ⟨hI, -, -, -⟩ := finish_spec (ctxOK x) (adjOK x) hs
-    have h1 := hI.kb v (by rw [hv]; omega)
-    have h2 := card_done_le x.wg.n (finish (ctxX x) x.source)
-    have h3 := Nat.mul_le_mul_right (codeMax (ncode x)) (h2.trans (n_le_codeMax x))
-    omega
-  · rw [finish_invalid (show (ctxX x).n ≤ x.source by change x.wg.n ≤ _; omega)] at hv
-    simp [blank] at hv
 
 theorem core_time (x : EInput) {k : ℕ}
     (hk : k ≤ 6 * Nat.size x.wg.n + 33 * numEdges x + 25 * x.wg.n +
@@ -161,15 +153,15 @@ theorem codeMax_toE (x : Input) : codeMax (ncode (toE x)) ≤ codeMax (ncode x) 
   · exact hx _ (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ (List.mem_append_right _ hv)))
 
 /-- The distances, as the statement's output. -/
-noncomputable def spfN (x : Input) : Σ n, Fin n → ℕ∞ := ⟨x.1, fun v => (spf (toE x)).getD v ⊤⟩
+noncomputable def spfN (x : Input) : Σ n, Fin n → ℕ := ⟨x.1, fun v => (spo (toE x)).getD v 0⟩
 
-theorem map_spfN (x : Input) : (List.finRange x.1).map (spfN x).2 = spf (toE x) := by
-  have hl : (spf (toE x)).length = x.1 := length_spf (toE x)
+theorem map_spfN (x : Input) : (List.finRange x.1).map (spfN x).2 = spo (toE x) := by
+  have hl : (spo (toE x)).length = x.1 := by rw [spo, List.length_map]; exact length_spf (toE x)
   refine List.ext_getElem (by simp only [List.length_map]; exact List.length_finRange.trans hl.symm)
     fun i h1 h2 => ?_
   simp [spfN, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h2]
 
-theorem ncode_spfN (x : Input) : ncode (spfN x) = x.1 :: ncode (spf (toE x)) := by
+theorem ncode_spfN (x : Input) : ncode (spfN x) = x.1 :: ncode (spo (toE x)) := by
   rw [ncode_out, ncode_prod, ncode_nat]
   change [x.1] ++ ncode ((List.finRange x.1).map (spfN x).2) = _
   rw [map_spfN]; rfl
@@ -179,15 +171,22 @@ theorem len_spfN (x : Input) : (ncode (spfN x)).length = x.1 + 2 := by
   simp only [List.length_cons, List.length_map, length_spf]
   rfl
 
-theorem spfN_valid (x : Input) : shortestPaths.valid x (spfN x) := by
+/-- `spec` accepts, for a connected graph and a source vertex, the distances from the source. -/
+def AcceptsDist (spec : IOSpec Input (Σ n, Fin n → ℕ)) : Prop :=
+  ∀ n (G : SimpleGraph (Fin n)) (w : G.edgeSet → ℕ) (s : ℕ) (out : Σ n, Fin n → ℕ),
+    (G.Connected → ∀ h : s < n, out = ⟨n, fun v => ⨅ p : G.Walk ⟨s, h⟩ v,
+      (p.darts.map fun d => w ⟨d.edge, d.edge_mem⟩).sum⟩) → spec.valid ⟨n, G, w, s⟩ out
+
+theorem spfN_valid {spec : IOSpec Input (Σ n, Fin n → ℕ)} (hspec : AcceptsDist spec) (x : Input) :
+    spec.valid x (spfN x) := by
   obtain ⟨n, G, w, s⟩ := x
-  intro h
-  refine congrArg (Sigma.mk n) (funext fun v => ?_)
+  refine hspec n G w s _ fun _ h => congrArg (Sigma.mk n) (funext fun v => ?_)
   have hs : (toE ⟨n, G, w, s⟩).source < (toE ⟨n, G, w, s⟩).wg.n := h
-  change (spf (toE ⟨n, G, w, s⟩)).getD v ⊤ = _
-  simp only [spf, dif_pos hs]
-  rw [List.getD_eq_getElem?_getD, List.getElem?_ofFn]
-  rw [dif_pos (show (v : ℕ) < (toE ⟨n, G, w, s⟩).wg.n from v.isLt), Option.getD_some]
+  change (spo (toE ⟨n, G, w, s⟩)).getD v 0 = _
+  simp only [spo, spf, dif_pos hs]
+  rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_ofFn]
+  rw [dif_pos (show (v : ℕ) < (toE ⟨n, G, w, s⟩).wg.n from v.isLt), Option.map_some,
+    Option.getD_some]
   exact dist_toE ⟨n, G, w, s⟩ _ _
 
 /-! ### The program -/
@@ -350,8 +349,7 @@ theorem coreN_spec : CodeSpec coreN spfN timeN needN := by
   have hR₁' : CodeRegs S (ncode (toE x)).length (A + ℓ) m₁ := by rw [hle]; exact hR₁
   have hz₁ : ∀ a, A + ℓ + (ncode (toE x)).length ≤ a → m₁ a = 0 := fun a ha => by
     rw [hfr₁ a (by omega) (.inr (by omega)), hz a (by omega)]
-  refine Runs.seqs_cons (Runs.mono (core_run hR₁' (by omega) hTop hKB
-    (fun v _ _ hs => key_lt _ hMB v hs) hM₁' hz₁) ?_)
+  refine Runs.seqs_cons (Runs.mono (core_run hR₁' (by omega) hTop hKB hM₁' hz₁) ?_)
   rintro m₂ k₂ ⟨R₂, z10, z17, z0, zO, zhi, hk₂⟩
   rw [hO] at z10 z0 zO
   have hAO : A + ℓ + 1 ≤ O := by rw [hR9]; omega
@@ -498,12 +496,15 @@ theorem time_N (x : Input) :
 
 theorem small_coreN : Small 16 (codeProgram setScan lenScan coreN).lines := by decide +kernel
 
-/-- A TD word RAM with `<`, `+` and `−` finds shortest paths in `O(E + V log V)` steps. -/
-theorem shortestPathsInEPlusVLogV : ShortestPathsInEPlusVLogV :=
+/-- A TD word RAM with `<`, `+` and `−` solves, in `O(E + V log V)` steps, any spec that accepts
+the shortest-path distances. -/
+theorem shortestPaths_wordRAM (spec : IOSpec Input (Σ n, Fin n → ℕ)) (hspec : AcceptsDist spec) :
+    ∃ c, (tdWordRAM [.less, .add, .sub]).SolvableWithin spec fun ⟨V, G, _⟩ =>
+      c * (G.edgeSet.ncard + V * Nat.log 2 V) + c :=
   ⟨10432, solvableWithin_code (W := 16) (scale := 4) coreN_spec (lenScan_spec spfN) setScan_spec
     layout_input skips_input layout_out readsBack_out
     (fun x h => by have := len_input x; rw [h] at this; simp at this)
     (by omega) (by omega) small_coreN hS_N hneed_N
-    (fun x w hw hM => hbig_N x w hw hM) hfy_N shortestPaths spfN_valid _ time_N⟩
+    (fun x w hw hM => hbig_N x w hw hM) hfy_N spec (spfN_valid hspec) _ time_N⟩
 
 end Formalgo.Algorithms.ShortestPaths

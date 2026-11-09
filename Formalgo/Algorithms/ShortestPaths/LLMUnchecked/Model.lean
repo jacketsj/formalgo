@@ -215,6 +215,6 @@ def start (src : ℕ) : St :=
 def finish (src : ℕ) : St := whileF rootsCond (mainStep C) C.F (start C src)
 
 /-- The output for vertex id `v`. -/
-def outVal (s : St) (v : ℕ) : ℕ := if s.stat v = 2 then s.key v + 1 else 0
+def outVal (s : St) (v : ℕ) : ℕ := if s.stat v = 2 then s.key v else 0
 
 end Formalgo.Algorithms.ShortestPaths

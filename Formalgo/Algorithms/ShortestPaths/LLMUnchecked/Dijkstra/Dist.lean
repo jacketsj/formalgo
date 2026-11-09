@@ -1,5 +1,6 @@
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.EInput
 import Mathlib.Combinatorics.SimpleGraph.Walk.Operations
+import Mathlib.Data.ENat.Lattice
 
 /-!
 # Distances
@@ -8,6 +9,8 @@ LLM-generated; not checked by a human.
 -/
 
 namespace Formalgo.Algorithms.ShortestPaths
+
+open LLMUnchecked
 
 /-- A graph with a weight on every pair of vertices, for the proof. -/
 structure WGraph where
@@ -26,17 +29,6 @@ noncomputable def EInput.wg (x : EInput) : WGraph :=
 
 theorem wg_weight (x : EInput) {e : Sym2 (Fin x.n)} (h : e ∈ x.graph.edgeSet) :
     x.wg.weight e = x.weight ⟨e, h⟩ := dif_pos h
-
-theorem dist_toE (x : Input) (u v : Fin x.1) :
-    (toE x).wg.dist u v = dist x.2.1 x.2.2.1 u v := by
-  refine iInf_congr fun p => ?_
-  unfold SimpleGraph.Walk.edges
-  rw [List.map_map]
-  congr 3
-  funext d
-  change (toE x).wg.weight s(d.fst, d.snd) = _
-  rw [wg_weight _ d.adj]
-  exact lexW_eq _ d.adj
 
 variable (G : WGraph)
 
@@ -88,5 +80,23 @@ theorem dist_eq_top {u v : Fin G.n} (h : ∀ _ : G.graph.Walk u v, False) : G.di
 theorem le_dist {u v : Fin G.n} {d : ℕ∞} (h : ∀ p : G.graph.Walk u v, d ≤ wlen G p) :
     d ≤ G.dist u v :=
   le_iInf h
+
+theorem wlen_toE (x : Input) {u v : Fin x.1} (p : x.2.1.Walk u v) :
+    wlen (toE x).wg p = (p.darts.map fun d => x.2.2.1 ⟨d.edge, d.edge_mem⟩).sum := by
+  unfold wlen SimpleGraph.Walk.edges
+  rw [List.map_map]
+  congr 1
+  exact List.map_congr_left fun d _ => wg_weight (toE x) d.edge_mem
+
+theorem dist_toE (x : Input) (u v : Fin x.1) :
+    ((toE x).wg.dist u v).toNat =
+      ⨅ p : x.2.1.Walk u v, (p.darts.map fun d => x.2.2.1 ⟨d.edge, d.edge_mem⟩).sum := by
+  unfold WGraph.dist
+  rcases isEmpty_or_nonempty (x.2.1.Walk u v) with h | h
+  · haveI : IsEmpty ((toE x).wg.graph.Walk u v) := h
+    rw [iInf_of_isEmpty, sInf_empty, ENat.toNat_top, iInf_of_isEmpty, Nat.sInf_empty]
+  · haveI : Nonempty ((toE x).wg.graph.Walk u v) := h
+    rw [← ENat.coe_iInf, ENat.toNat_coe]
+    exact iInf_congr fun p => wlen_toE x p
 
 end Formalgo.Algorithms.ShortestPaths

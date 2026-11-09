@@ -10,7 +10,7 @@ them as registers, and restores them at the end. Cell `1` holds `S`, cell `2` is
 body reads and writes cells below `K` through the buffer.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 open Function
 
@@ -231,4 +231,4 @@ theorem exec_harness {B K S N : ℕ} {setS body : Cmd} {m₀ m₁ : Mem} {k₀ :
             have := (mem_regs h3K).1 (List.mem_reverse.1 h); omega), update_apply,
             if_neg hi0, h₅ i (by omega) hi]
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

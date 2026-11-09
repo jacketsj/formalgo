@@ -10,7 +10,7 @@ If the core computes a permutation `f x` of the array, the program is a TD word 
 `f`.
 -/
 
-namespace Formalgo.LLMUnchecked
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
 
 open Function Cmd
 
@@ -172,4 +172,4 @@ theorem solvableWithin_list {core : Cmd} {f : List ℕ → List ℕ} {t : ℕ �
     fun x => ⟨f x, (list_outputs hcore hf hW hscale hsmall x).1, hspec x⟩,
     fun x => haltsWithin_mono _ (list_outputs hcore hf hW hscale hsmall x).2 (htime x)⟩
 
-end Formalgo.LLMUnchecked
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

@@ -1,5 +1,10 @@
-import Formalgo.Algorithms.ShortestPaths.Statement
+import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
+import Mathlib.Combinatorics.SimpleGraph.Walk.Operations
+import Mathlib.Order.Lattice.Nat
+import Mathlib.Data.Set.Card
 import Mathlib.Data.Sym.Sym2.Order
+import Formalgo.Core.Code.Graph
+import Formalgo.Core.TDWordRAM
 
 /-!
 # The input as an edge list
@@ -12,6 +17,11 @@ in this form.
 -/
 
 namespace Formalgo.Algorithms.ShortestPaths
+
+/-- The statement's input type (the proof does not import the statement). -/
+abbrev LLMUnchecked.Input := Σ n, Σ G : SimpleGraph (Fin n), (G.edgeSet → ℕ) × ℕ
+
+open LLMUnchecked
 
 open Classical in
 /-- The edges `(u, v)` of `G` with `u < v`, in lexicographic order. -/
@@ -97,30 +107,7 @@ noncomputable instance {Value : Type*} [Code ℕ Value] : Code EInput Value :=
 theorem encode_einput {Value : Type*} [Code ℕ Value] (x : EInput) :
     (Code.encode x : List Value) = Code.encode (inTuple x) := rfl
 
-open Classical in
-/-- The weight of an edge, looked up by its ends in increasing order. -/
-noncomputable def lexW {n : ℕ} {G : SimpleGraph (Fin n)} (weight : Edges G → ℕ)
-    (e : Sym2 (Fin n)) : ℕ :=
-  if h : toLex (e.inf, e.sup) ∈ Edges G then weight ⟨_, h⟩ else 0
-
 /-- The statement's input as an edge-list input. -/
-noncomputable def toE (x : Input) : EInput := ⟨x.1, x.2.1, fun e => lexW x.2.2.1 e.1, x.2.2.2⟩
-
-theorem weight_congr {n : ℕ} {G : SimpleGraph (Fin n)} (weight : Edges G → ℕ) {p q : Fin n ×ₗ Fin n}
-    (hp : p ∈ Edges G) (hq : q ∈ Edges G) (h : p = q) : weight ⟨p, hp⟩ = weight ⟨q, hq⟩ := by
-  subst h; rfl
-
-theorem lexW_eq {n : ℕ} {G : SimpleGraph (Fin n)} (weight : Edges G → ℕ) {a b : Fin n}
-    (h : G.Adj a b) : lexW weight s(a, b) = edgeWeight weight h := by
-  unfold lexW edgeWeight
-  rcases lt_or_gt_of_ne h.ne with hab | hab
-  · have e : toLex (s(a, b).inf, s(a, b).sup) = toLex (a, b) := by
-      simp [inf_of_le_left hab.le, sup_of_le_right hab.le]
-    rw [dif_pos hab, dif_pos (by rw [e]; exact ⟨hab, h⟩)]
-    exact weight_congr _ _ _ e
-  · have e : toLex (s(a, b).inf, s(a, b).sup) = toLex (b, a) := by
-      simp [inf_of_le_right hab.le, sup_of_le_left hab.le]
-    rw [dif_neg (not_lt.2 hab.le), dif_pos (by rw [e]; exact ⟨hab, h.symm⟩)]
-    exact weight_congr _ _ _ e
+noncomputable def toE (x : Input) : EInput := ⟨x.1, x.2.1, x.2.2.1, x.2.2.2⟩
 
 end Formalgo.Algorithms.ShortestPaths
