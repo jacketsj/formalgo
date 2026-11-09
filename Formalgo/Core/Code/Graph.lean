@@ -1,13 +1,11 @@
 import Mathlib.Combinatorics.Digraph.Basic
 import Mathlib.Combinatorics.Graph.Subgraph
 import Mathlib.Combinatorics.SimpleGraph.Basic
-import Mathlib.Data.Prod.Lex
-import Mathlib.Data.Sym.Sym2.Order
 import Formalgo.Core.Code
 
 /-!
 # Codes for graphs
-Codes for Mathlib's simple graphs, digraphs and multigraphs, and for labellings of their edges.
+Codes for Mathlib's simple graphs, digraphs and multigraphs.
 -/
 
 namespace Formalgo.Code
@@ -30,17 +28,5 @@ noncomputable instance graph : Code (Graph α β) Value :=
   ofInj (β := Set α × (β → Set α)) (fun G => (V(G), G.Inc)) fun _ _ h => by
     simp only [Prod.ext_iff] at h
     exact Graph.ext_inc h.1 (by simp [h.2])
-
-/-- Unordered pairs `s(a, b)` with `a ≤ b`, ordered lexicographically by `(a, b)`. -/
-abbrev sym2LinearOrder (α : Type*) [LinearOrder α] : LinearOrder (Sym2 α) :=
-  LinearOrder.lift' (fun z => toLex (Sym2.sortEquiv z : α × α))
-    fun _ _ h => Sym2.sortEquiv.injective (Subtype.ext (toLex.injective h))
-
-/-- A labelling of a set of unordered pairs (e.g. edge weights `G.edgeSet → ℕ`) is written as the
-list of its values, with `s(a, b)` (`a ≤ b`) in lexicographic order of `(a, b)`. -/
-noncomputable instance edgeLabels {s : Set (Sym2 α)} [Inhabited β] [Code (List β) Value] :
-    Code (s → β) Value :=
-  letI := sym2LinearOrder α
-  labels
 
 end Formalgo.Code

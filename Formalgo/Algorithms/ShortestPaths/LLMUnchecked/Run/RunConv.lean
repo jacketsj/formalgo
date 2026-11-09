@@ -408,7 +408,8 @@ theorem tail_mem {m : Mem} {A n : ℕ} {bs : List (List ℕ)} {t : List ℕ}
 theorem length_flatMap_take_le (bs : List (List ℕ)) (i : ℕ) :
     ((bs.take i).flatMap blk).length ≤ (bs.flatMap blk).length := by
   conv_rhs => rw [← List.take_append_drop i bs, List.flatMap_append]
-  simp
+  rw [List.length_append]
+  exact Nat.le_add_right _ _
 
 theorem length_emitAll_take_le (bs : List (List ℕ)) (i : ℕ) :
     (emitAll (bs.take i) 0).length ≤ (emitAll bs 0).length := by
