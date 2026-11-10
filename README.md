@@ -5,15 +5,26 @@ This library is for formalizing algorithmic results. Some examples of statements
 - There exists an algorithm running on (transdichotomous) word ram that solves the single-source shortest-path problem on n-vertex m-edge (connected, undirected) graphs in $O(m+n\log n)$ time.
 - There exists an algorithm running on real ram that solves the all-pairs shortest-path problem on n-vertex (connected, undirected) graphs in $O(n^3)$ time.
 
-These statements are written using thoroughly checked definitions of all these computational models.
+These statements use careful definitions of these computational models.
+As an example, here is the first statement, formalized:
+
+```
+def sorting : IOSpec (List ℕ) (List ℕ) where
+  valid input output := output.Perm input ∧ output.Pairwise (· ≤ ·)
+
+theorem sortsInNLogN_integerRAM :
+    ∃ c, IntegerRAM.withAddSub.semantics.SolvableWithin sorting
+      fun list => c * list.length * Nat.log 2 list.length + c := /-- O(n log n) --/
+  MergeSort.integerRAM sorting fun _ _ => And.intro /-- Proof --/
+```
 
 ## Principles
 
-This entire library is written with the goal of guaranteeing that the statements it can be used to claim are true. It does *not* make proving these statements easy, since LLMs can now be used to prove such (challenging) statements.
+This entire library is written with the goal of having easily-aduitable definitions and statements. It does *not* make proving these statements easy, since LLMs can now be used to prove such (challenging) statements.
 
 ## Core Overview
 
-The underlying models are carefully defined in `Formalgo/Core`. There are several different abstraction layers worth mentioning. The first is what’s needed to define our various machines:
+The underlying models are carefully defined in `Formalgo/Core`. There are several different abstraction layers worth mentioning. The first layer is what's needed to define our various machines:
 
 - A `Tape` is a memory system for a machine. It is a mapping from addresses (of a given type) to values (of a given type).
 - A `ControlFlow` is a finite automaton whose states are `PC` values, and whose characters are `Outcome` values.
