@@ -21,7 +21,7 @@ theorem arr_lt {k i : ℕ} (hk : k < 7) (hi : i ≤ L.bnd k) : L.H + k * L.R + i
   rw [Nat.succ_mul] at this; omega
 
 theorem rd_spec (hR : Rep L σ m) {d k i : ℕ} (hk : k < 7) (hi : m i ≤ L.bnd k) (hd : d < 32)
-    (hd2 : d ≠ 2) (hi32 : i < 32) (hB : L.top < B) :
+    (_hd2 : d ≠ 2) (hi32 : i < 32) (hB : L.top < B) :
     Runs B (rd d k i) m fun m' c => m' d = fld σ k (m i) ∧
       (∀ a, a ≠ 2 → a ≠ d → m' a = m a) ∧ c = 2 := by
   have ha := arr_lt (L := L) hk hi
@@ -51,7 +51,7 @@ theorem wr_spec (hR : Rep L σ m) {k i s : ℕ} (hk : k < 7) (hi : m i ≤ L.bnd
   rw [update_of_ne ha', f₁ a h2]
 
 theorem chAt_spec (hR : Rep L σ m) (hF : Fixed L x m) {p j : ℕ} (hp : m p ≤ L.n)
-    (hj : m j < L.cap (m p)) (hp32 : p < 32) (hj32 : j < 32) (hp2 : p ≠ 2) (hj2 : j ≠ 2)
+    (hj : m j < L.cap (m p)) (hp32 : p < 32) (hj32 : j < 32) (_hp2 : p ≠ 2) (hj2 : j ≠ 2)
     (hB : L.top < B) :
     Runs B (chAt p j) m fun m' c => m' 2 = L.cb (m p) + m j ∧ (∀ a, a ≠ 2 → m' a = m a) ∧
       c = 3 := by

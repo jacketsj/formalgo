@@ -10,7 +10,9 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St
 
-variable {s : St} {M L : Finset ℕ} {e v : ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s : StW R} {M L : Finset ℕ} {e v : ℕ}
 
 theorem ne_zero_of_mem (h : Forest s M e) {x : ℕ} (hx : x ∈ M) : x ≠ 0 :=
   fun h0 => h.zero (h0 ▸ hx)
@@ -25,6 +27,7 @@ theorem Forest.attach_root (h : Forest s M e) (hv : s.par v = 0) : Forest (attac
     (fun w _ hp => by
       simp only [attach]; rw [update_of_ne (by rintro rfl; exact hp hv)])
 
+omit [LinearOrder R] in
 theorem RootList.attach_root (h : RootList s M L) (hvL : v ∈ L) :
     RootList (attach v 0 s) M (L.erase v) := by
   obtain ⟨hvM, hv⟩ := h.loose v hvL
@@ -54,12 +57,14 @@ theorem RootList.attach_root (h : RootList s M L) (hvL : v ∈ L) :
 /-! ### Popping the last root -/
 
 /-- The state after taking the last root out of the array. -/
-def popDeg (s : St) : St := { s with deg := update s.deg 0 (s.deg 0 - 1) }
+def popDeg (s : StW R) : StW R := { s with deg := update s.deg 0 (s.deg 0 - 1) }
 
 theorem Forest.popDeg (h : Forest s M e) : Forest (popDeg s) M e :=
-  h.congr rfl rfl rfl rfl (fun x hx => by simp [ShortestPaths.popDeg, update_of_ne (ne_zero_of_mem h hx)])
+  h.congr rfl rfl rfl rfl (fun x hx => by
+    simp [ShortestPaths.popDeg, update_of_ne (ne_zero_of_mem h hx)])
     (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ _ => rfl)
 
+omit [LinearOrder R] in
 theorem RootList.popDeg (h : RootList s M L) (hd : s.deg 0 ≠ 0) :
     RootList (popDeg s) M (insert (s.ch 0 (s.deg 0 - 1)) L) := by
   obtain ⟨x1, x2, x3, x4⟩ := h.list (s.deg 0 - 1) (by omega)
@@ -90,6 +95,7 @@ theorem Forest.detach_root (h : Forest s M e)
     (fun w _ hp => by
       simp only [detach]; rw [update_of_ne (by rintro rfl; exact hp hlast)])
 
+omit [LinearOrder R] in
 theorem RootList.detach_root (h : RootList s M L) (hvM : v ∈ M) (hv : s.par v = 0)
     (hvL : v ∉ L) : RootList (detach v 0 s) M (insert v L) := by
   obtain ⟨v1, v2⟩ := h.root v hvM hv hvL
@@ -172,6 +178,7 @@ theorem Forest.insert_fresh (h : Forest s M e) (hvM : v ∉ M) (hv0 : v ≠ 0) (
     · exact hm
     · exact h.mark w hw
 
+omit [LinearOrder R] in
 theorem RootList.insert_fresh (h : RootList s M L) (hvM : v ∉ M) (hv : s.par v = 0) :
     RootList s (insert v M) (insert v L) := by
   refine ⟨fun w hw => ?_, fun j hj => ?_, fun w hw hp hL => ?_⟩
@@ -199,7 +206,8 @@ theorem Forest.erase_root (h : Forest s M e) (hvM : v ∈ M) (hv : s.par v = 0) 
   refine ⟨fun h0 => h.zero (Finset.mem_of_mem_erase h0), fun w hw hp => ?_, fun x hx j hj => ?_,
     fun w hw hp => h.order w (Finset.mem_of_mem_erase hw) hp,
     fun w hw hp => h.height w (Finset.mem_of_mem_erase hw) hp, fun w hw hp he => ?_,
-    fun w hw w' hw' hp => h.ltinj w (Finset.mem_of_mem_erase hw) w' (Finset.mem_of_mem_erase hw') hp,
+    fun w hw w' hw' hp =>
+      h.ltinj w (Finset.mem_of_mem_erase hw) w' (Finset.mem_of_mem_erase hw') hp,
     fun w hw hp => h.ltclock w (Finset.mem_of_mem_erase hw) hp,
     fun w hw => h.mark w (Finset.mem_of_mem_erase hw)⟩
   · have hwM := Finset.mem_of_mem_erase hw
@@ -212,6 +220,7 @@ theorem Forest.erase_root (h : Forest s M e) (hvM : v ∈ M) (hv : s.par v = 0) 
   · have hwM := Finset.mem_of_mem_erase hw
     exact (hold w hwM hp).trans (h.fib w hwM hp he)
 
+omit [LinearOrder R] in
 theorem RootList.erase_root (h : RootList s M L) (hvL : v ∈ L) :
     RootList s (M.erase v) (L.erase v) := by
   refine ⟨fun w hw => ?_, fun j hj => ?_, fun w hw hp hL => ?_⟩

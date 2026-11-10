@@ -92,7 +92,8 @@ theorem tableBody_spec (C : Ctx) {M : Finset ℕ} {Q : ℕ} {s₀ : St} {m₀ : 
     rw [e] at hstep ⊢
     refine Runs.mono (tabTail_spec (d := d) (R₁.regs1 (r := 2) (by simp [Tmp]) (by omega) f₂)
       (by rw [f₂ 11 (by omega), h₁11]) (by omega) hB) fun m₃ c₃ ⟨R₃, h₃11, h₃13, F₃, hc₃⟩ => ?_
-    have Fall : Frm L TT m m₃ := F₁.trans ((Frm.reg1 (by simp [TT, T29, T267]) (by omega) f₂).trans F₃)
+    have Fall : Frm L TT m m₃ := F₁.trans ((Frm.reg1 (by simp [TT, T29, T267])
+        (by omega) f₂).trans F₃)
     refine ⟨⟨R₃.same ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩, hF.frame hH Fall.2,
       hfr.trans Fall, h₃11, h₃13, hstep.1⟩, ?_⟩
     change s.time + _ + 2 ≤ s.time + 40
@@ -102,7 +103,8 @@ theorem tableBody_spec (C : Ctx) {M : Finset ℕ} {Q : ℕ} {s₀ : St} {m₀ : 
     have hxT := hI.tbl d hx
     have hxn : s.tbl d ≤ L.n := by rw [hLn]; exact (hM _ hxT.2.1).2
     set xv := s.tbl d with hxv
-    have e : tabStep (s, d) = (St.tick 40 (St.updMin xv (St.attach xv 0 (St.setTbl d 0 s))), d + 1) := by
+    have e : tabStep (s, d) = (St.tick 40 (St.updMin xv (St.attach xv 0 (St.setTbl d 0 s))),
+        d + 1) := by
       simp [tabStep, ← hxv, hx]
     rw [e] at hstep ⊢
     refine Runs.seqs_cons (Runs.mono (wr_spec R₁ (k := 6) (i := 11) (s := 8) (by omega)
@@ -130,11 +132,12 @@ theorem tableBody_spec (C : Ctx) {M : Finset ℕ} {Q : ℕ} {s₀ : St} {m₀ : 
     have R₅ := R₄.regs1 (r := 2) (by simp [Tmp]) (by omega) f₅
     have g₄ : ∀ r, r < 32 → ¬T29 r → m₄ r = m₃ r := F₄.1
     have h₅11 : m₅ 11 = d := by
-      rw [f₅ 11 (by omega), g₄ 11 (by omega) (by simp [T29, T267]), g₃ 11 (by omega) (by simp [T267]),
+      rw [f₅ 11 (by omega), g₄ 11 (by omega) (by simp [T29, T267]), g₃ 11 (by omega)
+          (by simp [T267]),
         g₂ 11 (by omega) (by omega), h₁11]
     refine Runs.mono (tabTail_spec R₅ h₅11 (by omega) hB) fun m₆ c₆ ⟨R₆, h₆11, h₆13, F₆, hc₆⟩ => ?_
     have Fall : Frm L TT m m₆ := F₁.trans (F₂.trans ((F₃.mono fun a ha => Or.inl (Or.inl ha)).trans
-      ((F₄.mono fun a ha => Or.inl ha).trans ((Frm.reg1 (by simp [TT, T29, T267]) (by omega) f₅).trans
+      ((F₄.mono fun a ha => Or.inl ha).trans ((Frm.reg1 (by simp [T29, T267]) (by omega) f₅).trans
         F₆))))
     refine ⟨⟨R₆.same ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩, hF.frame hH Fall.2,
       hfr.trans Fall, h₆11, h₆13, hstep.1⟩, ?_⟩
@@ -161,7 +164,7 @@ theorem tableLoop_spec (C : Ctx) {M : Finset ℕ} {Q : ℕ} {s₀ : St} {m₀ : 
   simp only [tabCond]
   rw [hLD]
   constructor
-  · intro he; split_ifs at he with hp <;> omega
+  · intro he; split_ifs at he with hp; omega
   · intro hle; rw [if_neg (by omega)]
 
 end Formalgo.Algorithms.ShortestPaths

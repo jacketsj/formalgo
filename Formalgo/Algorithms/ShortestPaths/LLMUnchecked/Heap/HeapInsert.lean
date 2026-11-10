@@ -10,16 +10,19 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {s : St} {M : Finset ℕ} {n v : ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s : StW R} {M : Finset ℕ} {n v : ℕ}
 
 /-- Insert a fresh node `v` with key `k` and status `st`. -/
-def insertSt (v k st : ℕ) (s : St) : St := updMin v (attach v 0 (setStat v st (setKey v k s)))
+def insertSt (v : ℕ) (k : R) (st : ℕ) (s : StW R) : StW R :=
+  updMin v (attach v 0 (setStat v st (setKey v k s)))
 
-theorem updMin_hmin (v : ℕ) (t : St) : (updMin v t).hmin =
+theorem updMin_hmin (v : ℕ) (t : StW R) : (updMin v t).hmin =
     if t.hmin = 0 then v else if t.key v < t.key t.hmin then v else t.hmin := by
   unfold St.updMin; split_ifs <;> rfl
 
-theorem updMin_of (P : St → Prop) {t : St} (hP : ∀ x, P { t with hmin := x }) (h : P t) :
+theorem updMin_of (P : StW R → Prop) {t : StW R} (hP : ∀ x, P { t with hmin := x }) (h : P t) :
     P (updMin v t) := by
   unfold St.updMin; split_ifs
   · exact hP _
@@ -27,7 +30,7 @@ theorem updMin_of (P : St → Prop) {t : St} (hP : ∀ x, P { t with hmin := x }
   · exact h
 
 theorem insert_spec (hH : HeapInv n s M) (he : M = ∅ → s.hmin = 0) (hv1 : 1 ≤ v) (hvn : v ≤ n)
-    (hvM : v ∉ M) (hp : s.par v = 0) (hd : s.deg v = 0) (hm : s.mark v ≤ 1) (k st : ℕ) :
+    (hvM : v ∉ M) (hp : s.par v = 0) (hd : s.deg v = 0) (hm : s.mark v ≤ 1) (k : R) (st : ℕ) :
     HeapInv n (insertSt v k st s) (insert v M) ∧
       (insertSt v k st s).key = update s.key v k ∧
       (insertSt v k st s).stat = update s.stat v st ∧
@@ -78,7 +81,7 @@ theorem insert_spec (hH : HeapInv n s M) (he : M = ∅ → s.hmin = 0) (hv1 : 1 
     by_cases hM : M = ∅
     · rw [if_pos (he hM)]
       refine ⟨Finset.mem_insert_self _ _, hp, fun w hw => ?_⟩
-      rw [hM] at hw; simp at hw; rw [hw]
+      rw [hM] at hw; rw [show w = v by simpa using hw]
     · obtain ⟨m1, m2, m3⟩ := hH.min (Finset.nonempty_iff_ne_empty.2 hM)
       rw [if_neg (ne_zero_of_mem hH.forest m1)]
       have hmv : s.hmin ≠ v := fun h => hvM (h ▸ m1)
@@ -87,11 +90,11 @@ theorem insert_spec (hH : HeapInv n s M) (he : M = ∅ → s.hmin = 0) (hv1 : 1 
         rw [update_self] at hlt ⊢
         rcases Finset.mem_insert.1 hw with rfl | hw
         · rw [update_self]
-        · rw [hk' w hw]; rw [hk' _ m1] at hlt; have := m3 w hw; omega
+        · rw [hk' w hw]; rw [hk' _ m1] at hlt; have := m3 w hw; exact (hlt.trans_le this).le
       · refine ⟨Finset.mem_insert_of_mem m1, m2, fun w hw => ?_⟩
         rw [hk' _ m1] at hlt ⊢
         rcases Finset.mem_insert.1 hw with rfl | hw
-        · rw [update_self] at hlt ⊢; omega
+        · rw [update_self] at hlt ⊢; exact not_lt.1 hlt
         · rw [hk' w hw]; exact m3 w hw
   · -- The potential.
     have hmk : marked (insertSt v k st s) (insert v M) = marked s M := by
@@ -108,8 +111,8 @@ theorem insert_spec (hH : HeapInv n s M) (he : M = ∅ → s.hmin = 0) (hv1 : 1 
         · exact ⟨hw, h⟩
       · rintro ⟨hw, h⟩; exact ⟨.inr hw, h⟩
     have hdeg : (insertSt v k st s).deg 0 = s.deg 0 + 1 :=
-      updMin_of (fun t => t.deg 0 = s.deg 0 + 1) (fun _ => by simp [attach, t, setStat, setKey])
-        (by simp [attach, t, setStat, setKey])
+      updMin_of (fun t => t.deg 0 = s.deg 0 + 1) (fun _ => by simp [attach, setStat, setKey])
+        (by simp [attach, setStat, setKey])
     simp only [pot, hmk, hdeg]; omega
 
 end Formalgo.Algorithms.ShortestPaths

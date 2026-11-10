@@ -47,13 +47,15 @@ theorem moveBody_spec (C : Ctx) {M : Finset ℕ} {z Q : ℕ} {s₀ : St} {m₀ :
   have hz0 : z' ≠ 0 := by have := (hM _ hzM).1; omega
   have hdz : s.deg z' < C.D := by rw [hD]; exact hI.forest.deg_lt hM hzM
   have hd0 : s.deg 0 ≤ L.n := by rw [hLn]; exact hI.roots.deg0_le.trans (card_le_n hM)
-  obtain ⟨c1, c2, c3⟩ := hI.forest.down z' hzM (s.deg z' - 1) (show s.deg z' - 1 < s.deg z' by omega)
+  obtain ⟨c1, c2,
+      c3⟩ := hI.forest.down z' hzM (s.deg z' - 1) (show s.deg z' - 1 < s.deg z' by omega)
   have hcn : s.ch z' (s.deg z' - 1) ≤ L.n := by rw [hLn]; exact (hM _ c1).2
   have hH := hR.H32
   have ht := top_ge (L := L)
   have hRn : L.n + L.D + 3 = L.R := rfl
   have hstep := hI.step hc
-  have hms : moveStep (s, z') = (St.tick 30 (St.attach (s.ch z' (update s.deg z' (s.deg z' - 1) z')) 0
+  have hms : moveStep (s, z') = (St.tick 30 (St.attach (s.ch z' (update s.deg z'
+      (s.deg z' - 1) z')) 0
       (setFld 3 z' (s.deg z' - 1) s)), z') := rfl
   rw [update_self] at hms
   rw [hms] at hstep ⊢
@@ -89,7 +91,8 @@ theorem moveBody_spec (C : Ctx) {M : Finset ℕ} {z Q : ℕ} {s₀ : St} {m₀ :
     h₂11] at h₄
   have h₄14 : m₄ 14 = s.ch z' (s.deg z' - 1) := h₄
   have R₄ := R₃.reg (T := TM) (fun a ha => TM_tmp ha)
-    (Frm.reg (by simp [TM]) (by omega) f₄ (by simp [TM, T267])) (fun a ha => f₄ a (by omega) (by omega))
+    (Frm.reg (by simp [TM]) (by omega) f₄ (by simp [TM, T267])) (fun a ha => f₄ a (by omega)
+        (by omega))
   have X₄ : Fixed L x m₄ := X₃.frame hH (Frm.reg (L := L) (T := TM) (by simp [TM]) (by omega) f₄
     (by simp [TM, T267])).2
   have z₄ : m₄ 8 = 0 := by
@@ -103,17 +106,20 @@ theorem moveBody_spec (C : Ctx) {M : Finset ℕ} {z Q : ℕ} {s₀ : St} {m₀ :
   refine Runs.seqs_cons (Runs.lessR (by omega) (by omega) (by omega) fun m₆ h₆ f₆ => ?_)
   refine Runs.seqs_nilR (by omega) fun m₇ h₇ f₇ => ?_
   have F₇ : Frm L TM m₃ m₇ := (Frm.reg (by simp [TM]) (by omega) f₄ (by simp [TM, T267])).trans
-    ((F₅.mono fun a ha => Or.inl ha).trans ((Frm.reg1 (by simp [TM]) (by omega) f₆).trans
-      (Frm.reg1 (by simp [TM, T267]) (by omega) f₇)))
+    ((F₅.mono fun a ha => Or.inl ha).trans ((Frm.reg1 (by simp) (by omega) f₆).trans
+      (Frm.reg1 (by simp [T267]) (by omega) f₇)))
   have Fall : Frm L TM m m₇ := F₃.trans F₇
   have R₇ := R₅.reg (T := TM) (fun a ha => TM_tmp ha) ((Frm.reg1 (by simp [TM]) (by omega) f₆).trans
-    (Frm.reg1 (by simp [TM, T267]) (by omega) f₇)) (fun a ha => by rw [f₇ a (by omega), f₆ a (by omega)])
+    (Frm.reg1 (by simp [TM, T267]) (by omega) f₇)) (fun a ha => by rw [f₇ a (by omega), f₆ a
+        (by omega)])
   have g₅ : ∀ r, r < 32 → ¬T267 r → m₅ r = m₄ r := F₅.1
   refine ⟨⟨R₇.same ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩, hF.frame hH Fall.2,
     hfr.trans Fall, ?_, ?_, hstep.1⟩, ?_⟩
-  · rw [f₇ 30 (by omega), f₆ 30 (by omega), g₅ 30 (by omega) (by simp [T267]), f₄ 30 (by omega) (by omega),
+  · rw [f₇ 30 (by omega), f₆ 30 (by omega), g₅ 30 (by omega) (by simp [T267]), f₄ 30 (by omega)
+      (by omega),
       g₃ 30 (by omega) (by omega), g₂ 30 (by omega) (by omega), h30]
-  · rw [f₇ 13 (by omega), h₆, g₅ 8 (by omega) (by simp [T267]), z₄, g₅ 11 (by omega) (by simp [T267]),
+  · rw [f₇ 13 (by omega), h₆, g₅ 8 (by omega) (by simp [T267]), z₄, g₅ 11 (by omega)
+      (by simp [T267]),
       f₄ 11 (by omega) (by omega), g₃ 11 (by omega) (by omega), h₂11]
     change _ = if 0 < update (update s.deg z' (s.deg z' - 1)) 0 _ z' then 1 else 0
     rw [update_of_ne hz0, update_self]
@@ -142,7 +148,7 @@ theorem moveLoop_spec (C : Ctx) {M : Finset ℕ} {z Q : ℕ} {s₀ : St} {m₀ :
   rw [hR.r13, hR.rep.one]
   simp only [moveCond]
   constructor
-  · intro he; split_ifs at he with hp <;> omega
+  · intro he; split_ifs at he with hp; omega
   · intro hne; rw [if_pos (by omega)]
 
 end Formalgo.Algorithms.ShortestPaths

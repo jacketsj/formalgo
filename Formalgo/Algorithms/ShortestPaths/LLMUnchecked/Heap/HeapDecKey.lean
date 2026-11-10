@@ -10,10 +10,12 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {s s' : St} {M L : Finset ℕ} {e v p nk : ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s s' : StW R} {M L : Finset ℕ} {e v p : ℕ} {nk : R}
 
 /-- The heap invariant between operations. -/
-structure HeapInv (n : ℕ) (s : St) (M : Finset ℕ) : Prop where
+structure HeapInv (n : ℕ) (s : StW R) (M : Finset ℕ) : Prop where
   range : ∀ v ∈ M, 1 ≤ v ∧ v ≤ n
   forest : Forest s M 0
   roots : RootList s M ∅
@@ -26,6 +28,7 @@ theorem Forest.setHmin (h : Forest s M e) (x : ℕ) : Forest { s with hmin := x 
   h.congr rfl rfl rfl rfl (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl)
     (fun _ _ _ => rfl)
 
+omit [LinearOrder R] in
 theorem RootList.setHmin (h : RootList s M L) (x : ℕ) : RootList { s with hmin := x } M L :=
   h.congr (fun _ _ => rfl) rfl rfl (fun _ _ _ => rfl)
 
@@ -52,7 +55,7 @@ theorem RootList.updMin (h : RootList s M L) : RootList (updMin v s) M L := by
   · exact h
 
 /-- The minimum after lowering the key of `v`, a root, to `nk`. -/
-theorem min_updMinKey {s₀ : St} (hm : s₀.hmin ∈ M ∧ s₀.par s₀.hmin = 0 ∧
+theorem min_updMinKey {s₀ : StW R} (hm : s₀.hmin ∈ M ∧ s₀.par s₀.hmin = 0 ∧
       ∀ w ∈ M, s₀.key s₀.hmin ≤ s₀.key w) (hv : v ∈ M) (hnk : nk < s₀.key v)
     (hkey : s'.key = update s₀.key v nk) (hh : s'.hmin = s₀.hmin) (hr : s'.par s₀.hmin = 0)
     (hvr : s'.par v = 0) :
@@ -63,25 +66,25 @@ theorem min_updMinKey {s₀ : St} (hm : s₀.hmin ∈ M ∧ s₀.par s₀.hmin =
   split_ifs with hc
   · refine ⟨hv, hvr, fun w hw => ?_⟩
     simp only [hkey, hh, update_self] at hc ⊢
-    have hmv : s₀.hmin ≠ v := by rintro hc'; rw [hc', update_self] at hc; omega
+    have hmv : s₀.hmin ≠ v := by rintro hc'; rw [hc', update_self] at hc; exact lt_irrefl _ hc
     rw [update_of_ne hmv] at hc
     rcases eq_or_ne w v with rfl | hwv
     · simp
-    · rw [update_of_ne hwv]; have := m3 w hw; omega
+    · rw [update_of_ne hwv]; have := m3 w hw; exact (hc.trans_le this).le
   · refine ⟨hh ▸ m1, hh ▸ hr, fun w hw => ?_⟩
     rw [hkey, hh] at hc ⊢
     rcases eq_or_ne w v with rfl | hwv
-    · rw [update_self]; omega
+    · rw [update_self]; exact not_lt.1 hc
     · rw [update_of_ne hwv]
       have := m3 w hw
       rcases eq_or_ne s₀.hmin v with hmv | hmv
-      · rw [hmv, update_self]; rw [hmv] at this; omega
+      · rw [hmv, update_self]; rw [hmv] at this; exact (hnk.trans_le this).le
       · rw [update_of_ne hmv]; exact this
 
 /-! ### What a cascade leaves alone -/
 
 /-- What decreasing a key leaves alone. -/
-structure DecFrame (M : Finset ℕ) (s s' : St) : Prop where
+structure DecFrame (M : Finset ℕ) (s s' : StW R) : Prop where
   key : s'.key = s.key
   stat : s'.stat = s.stat
   tbl : s'.tbl = s.tbl
@@ -89,15 +92,19 @@ structure DecFrame (M : Finset ℕ) (s s' : St) : Prop where
   roots : ∀ w, s.par w = 0 → s'.par w = 0
   out : ∀ w ∉ M, w ≠ 0 → s'.deg w = s.deg w ∧ s'.mark w = s.mark w ∧ s'.par w = s.par w
 
-theorem DecFrame.refl : DecFrame M s s := ⟨rfl, rfl, rfl, rfl, fun _ h => h, fun _ _ _ => ⟨rfl, rfl, rfl⟩⟩
+omit [LinearOrder R] in
+theorem DecFrame.refl : DecFrame M s s :=
+  ⟨rfl, rfl, rfl, rfl, fun _ h => h, fun _ _ _ => ⟨rfl, rfl, rfl⟩⟩
 
-theorem DecFrame.trans {s'' : St} (h : DecFrame M s s') (h' : DecFrame M s' s'') :
+omit [LinearOrder R] in
+theorem DecFrame.trans {s'' : StW R} (h : DecFrame M s s') (h' : DecFrame M s' s'') :
     DecFrame M s s'' :=
   ⟨h'.key.trans h.key, h'.stat.trans h.stat, h'.tbl.trans h.tbl, h'.hmin.trans h.hmin,
     fun w hw => h'.roots w (h.roots w hw), fun w hw h0 => by
       obtain ⟨a, b, c⟩ := h.out w hw h0; obtain ⟨a', b', c'⟩ := h'.out w hw h0
       exact ⟨a'.trans a, b'.trans b, c'.trans c⟩⟩
 
+omit [LinearOrder R] in
 theorem DecFrame.cut (hf : CutFacts s M v p) (c : ℕ) : DecFrame M s (tick c (cut v p s)) := by
   refine ⟨rfl, rfl, rfl, rfl, fun w hw => ?_, fun w hw h0 => ?_⟩
   · change update s.par v 0 w = 0
@@ -114,6 +121,7 @@ theorem DecFrame.cut (hf : CutFacts s M v p) (c : ℕ) : DecFrame M s (tick c (c
     · change update s.par v 0 w = s.par w
       rw [update_of_ne hwv]
 
+omit [LinearOrder R] in
 theorem DecFrame.setMark (hp : p ∈ M) (k : ℕ) : DecFrame M s (setMark p k s) := by
   refine ⟨rfl, rfl, rfl, rfl, fun w hw => hw, fun w hw _ => ⟨rfl, ?_, rfl⟩⟩
   change update s.mark p k w = s.mark w
@@ -122,9 +130,10 @@ theorem DecFrame.setMark (hp : p ∈ M) (k : ℕ) : DecFrame M s (setMark p k s)
 
 /-! ### The cascade as a whole -/
 
+omit [LinearOrder R] in
 theorem marked_subset : marked s M ⊆ M := Finset.filter_subset _ _
 
-theorem casc_loop (C : Ctx) {Q : ℕ} {a : St × ℕ} (h : CascInv M Q a) (hF : M.card ≤ C.F) :
+theorem casc_loop (C : CtxW R) {Q : ℕ} {a : StW R × ℕ} (h : CascInv M Q a) (hF : M.card ≤ C.F) :
     CascInv M Q (whileF cascCond cascStep C.F a) ∧ ¬cascCond (whileF cascCond cascStep C.F a) ∧
       DecFrame M a.1 (whileF cascCond cascStep C.F a).1 := by
   have hP := whileF_induct (c := cascCond) (f := cascStep)
@@ -153,21 +162,21 @@ theorem slack_cut (h : Forest s M e) (hf : CutFacts s M v p) (hpe : p ≠ e)
 
 /-! ### Decreasing a key -/
 
-theorem updMinKey_of (P : St → Prop) (hP : ∀ x, P { s with hmin := x }) (h : P s) :
+theorem updMinKey_of (P : StW R → Prop) (hP : ∀ x, P { s with hmin := x }) (h : P s) :
     P (updMinKey v nk s) := by
   unfold ShortestPaths.updMinKey; split_ifs
   · exact hP _
   · exact h
 
 /-- What decreasing a key gives. -/
-structure DecOut (n : ℕ) (s : St) (M : Finset ℕ) (v nk : ℕ) (r : St) : Prop where
+structure DecOut (n : ℕ) (s : StW R) (M : Finset ℕ) (v : ℕ) (nk : R) (r : StW R) : Prop where
   inv : HeapInv n r M
   key : r.key = update s.key v nk
   stat : r.stat = s.stat
   out : ∀ w ∉ M, w ≠ 0 → r.deg w = s.deg w ∧ r.mark w = s.mark w ∧ r.par w = s.par w
   cost : r.time + 65 * pot r M ≤ s.time + 65 * pot s M + 275
 
-theorem decKey_root (C : Ctx) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s.key v)
+theorem decKey_root (C : CtxW R) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s.key v)
     (hp : s.par v = 0) : DecOut C.n s M v nk (updMinKey v nk (tick 80 (setKey v nk s))) := by
   obtain ⟨m1, m2, m3⟩ := hH.min ⟨v, hv⟩
   refine ⟨⟨hH.range, ((hH.forest.setKey hv hnk.le (.inl hp)).tick 80).updMinKey,
@@ -182,7 +191,7 @@ theorem decKey_root (C : Ctx) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < 
       (fun _ => by change s.time + 80 + 65 * pot s M ≤ _; omega)
       (by change s.time + 80 + 65 * pot s M ≤ _; omega)⟩
 
-theorem decKey_keep (C : Ctx) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s.key v)
+theorem decKey_keep (C : CtxW R) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s.key v)
     (hp : s.par v ≠ 0) (hk : s.key (s.par v) ≤ nk) :
     DecOut C.n s M v nk (tick 80 (setKey v nk s)) := by
   obtain ⟨m1, m2, m3⟩ := hH.min ⟨v, hv⟩
@@ -197,10 +206,11 @@ theorem decKey_keep (C : Ctx) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < 
   · rw [update_of_ne hwv]; exact m3 w hw
 
 /-- The end of a cascade. -/
-def cascFin (a : St × ℕ) : St := if a.1.par a.2 ≠ 0 then setMark a.2 1 a.1 else a.1
+def cascFin (a : StW R × ℕ) : StW R := if a.1.par a.2 ≠ 0 then setMark a.2 1 a.1 else a.1
 
 /-- The cascade starts in its invariant. -/
-theorem cascInv_start {n : ℕ} (hH : HeapInv n s M) (hv : v ∈ M) (hnk : nk < s.key v) (hp : s.par v ≠ 0) :
+theorem cascInv_start {n : ℕ} (hH : HeapInv n s M) (hv : v ∈ M) (hnk : nk < s.key v)
+    (hp : s.par v ≠ 0) :
     CascInv M (s.time + 80 + 65 * (pot s M + 1))
       (cut v (s.par v) (tick 80 (setKey v nk s)), s.par v) := by
   have hf := hH.forest.cutFacts hv hp
@@ -218,9 +228,9 @@ theorem cascInv_start {n : ℕ} (hH : HeapInv n s M) (hv : v ∈ M) (hnk : nk < 
     have h3 := Finset.card_erase_le (s := marked s M) (a := v)
     simp only [pot]; rw [h1, h2]; omega
   refine ⟨?_, ?_, hf.pM, fun hpp => ?_, ?_⟩
-  · show Forest (cut v (s.par v) (tick 80 (setKey v nk s))) M (s.par v)
+  · change Forest (cut v (s.par v) (tick 80 (setKey v nk s))) M (s.par v)
     rw [hcomm]; exact (hF0.setKey hv hnk.le (.inl hvr)).tick 80
-  · show RootList (cut v (s.par v) (tick 80 (setKey v nk s))) M ∅
+  · change RootList (cut v (s.par v) (tick 80 (setKey v nk s))) M ∅
     rw [hcomm]; exact (hR0.setKey v nk).tick 80
   · change older (cut v (s.par v) s) M (s.par v) ≤
       (cut v (s.par v) s).deg (s.par v) + (cut v (s.par v) s).mark (s.par v) + 1
@@ -231,7 +241,7 @@ theorem cascInv_start {n : ℕ} (hH : HeapInv n s M) (hv : v ∈ M) (hnk : nk < 
     exact slack_cut hH.forest hf hf.p0 hpp
   · change s.time + 80 + 65 * pot (cut v (s.par v) s) M ≤ _; omega
 
-theorem decKey_cut (C : Ctx) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s.key v)
+theorem decKey_cut (C : CtxW R) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s.key v)
     (hp : s.par v ≠ 0) (hFM : M.card ≤ C.F) :
     DecOut C.n s M v nk (updMinKey v nk (cascFin
       (whileF cascCond cascStep C.F (cut v (s.par v) (tick 80 (setKey v nk s)), s.par v)))) := by
@@ -272,7 +282,7 @@ theorem decKey_cut (C : Ctx) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s
     unfold cascFin; omega
   · unfold cascFin; omega
 
-theorem decKey_spec (C : Ctx) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s.key v)
+theorem decKey_spec (C : CtxW R) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < s.key v)
     (hFM : M.card ≤ C.F) : DecOut C.n s M v nk (decKey C v nk s) := by
   by_cases hp : s.par v = 0
   · have e : decKey C v nk s = updMinKey v nk (tick 80 (setKey v nk s)) := by
@@ -294,6 +304,6 @@ theorem decKey_spec (C : Ctx) (hH : HeapInv C.n s M) (hv : v ∈ M) (hnk : nk < 
         rw [if_neg (show ¬(tick 80 (setKey v nk s)).par v = 0 from hp),
           if_neg (show ¬nk < (tick 80 (setKey v nk s)).key ((tick 80 (setKey v nk s)).par v) by
             change ¬nk < update s.key v nk (s.par v); rw [update_of_ne hpv]; exact hk)]
-      rw [e]; exact decKey_keep C hH hv hnk hp (by omega)
+      rw [e]; exact decKey_keep C hH hv hnk hp (not_lt.1 hk)
 
 end Formalgo.Algorithms.ShortestPaths

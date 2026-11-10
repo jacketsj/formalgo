@@ -6,17 +6,23 @@ import Mathlib.Data.ENat.Lattice
 # Distances
 
 LLM-generated; not checked by a human.
+
+Walk weights are over any additive monoid `R`; the distance `WGraph.dist`, in `ℕ∞`, is for natural
+weights.
 -/
 
 namespace Formalgo.Algorithms.ShortestPaths
 
 open LLMUnchecked
 
-/-- A graph with a weight on every pair of vertices, for the proof. -/
-structure WGraph where
+/-- A graph with a weight in `R` on every pair of vertices, for the proof. -/
+structure WGraphW (R : Type*) where
   n : ℕ
   graph : SimpleGraph (Fin n)
-  weight : Sym2 (Fin n) → ℕ
+  weight : Sym2 (Fin n) → R
+
+/-- A graph with a natural weight on every pair of vertices. -/
+abbrev WGraph := WGraphW ℕ
 
 /-- The weight of a shortest walk from `u` to `v`, or `⊤` if there is none. -/
 noncomputable def WGraph.dist (G : WGraph) (u v : Fin G.n) : ℕ∞ :=
@@ -30,15 +36,16 @@ noncomputable def EInput.wg (x : EInput) : WGraph :=
 theorem wg_weight (x : EInput) {e : Sym2 (Fin x.n)} (h : e ∈ x.graph.edgeSet) :
     x.wg.weight e = x.weight ⟨e, h⟩ := dif_pos h
 
-variable (G : WGraph)
+section Generic
+
+variable {R : Type*} [AddCommMonoid R] (G : WGraphW R)
 
 /-- The weight of a walk. -/
-def wlen {u v : Fin G.n} (p : G.graph.Walk u v) : ℕ := (p.edges.map G.weight).sum
+def wlen {u v : Fin G.n} (p : G.graph.Walk u v) : R := (p.edges.map G.weight).sum
 
 variable {G}
 
-theorem dist_le_wlen {u v : Fin G.n} (p : G.graph.Walk u v) : G.dist u v ≤ wlen G p :=
-  iInf_le (fun p : G.graph.Walk u v => ((wlen G p : ℕ) : ℕ∞)) p
+theorem wlen_nil (u : Fin G.n) : wlen G (SimpleGraph.Walk.nil : G.graph.Walk u u) = 0 := rfl
 
 theorem wlen_reverse {u v : Fin G.n} (p : G.graph.Walk u v) : wlen G p.reverse = wlen G p := by
   simp [wlen, SimpleGraph.Walk.edges_reverse, List.sum_reverse]
@@ -51,9 +58,16 @@ theorem wlen_concat {u v w : Fin G.n} (p : G.graph.Walk u v) (h : G.graph.Adj v 
     wlen G (p.concat h) = wlen G p + G.weight s(v, w) := by
   simp [wlen]
 
+end Generic
+
+variable {G : WGraph}
+
+theorem dist_le_wlen {u v : Fin G.n} (p : G.graph.Walk u v) : G.dist u v ≤ wlen G p :=
+  iInf_le (fun p : G.graph.Walk u v => ((wlen G p : ℕ) : ℕ∞)) p
+
 theorem dist_self (u : Fin G.n) : G.dist u u = 0 :=
-  le_antisymm (by simpa [wlen] using dist_le_wlen (G := G) (SimpleGraph.Walk.nil : G.graph.Walk u u))
-    bot_le
+  le_antisymm
+    (by simpa [wlen] using dist_le_wlen (G := G) (SimpleGraph.Walk.nil : G.graph.Walk u u)) bot_le
 
 /-- The triangle inequality over an edge. -/
 theorem dist_edge {s a b : Fin G.n} (h : G.graph.Adj a b) :
@@ -80,6 +94,13 @@ theorem dist_eq_top {u v : Fin G.n} (h : ∀ _ : G.graph.Walk u v, False) : G.di
 theorem le_dist {u v : Fin G.n} {d : ℕ∞} (h : ∀ p : G.graph.Walk u v, d ≤ wlen G p) :
     d ≤ G.dist u v :=
   le_iInf h
+
+/-- A least walk weight is the distance. -/
+theorem coe_eq_dist {u v : Fin G.n} {k : ℕ}
+    (h : IsLeast (Set.range fun p : G.graph.Walk u v => wlen G p) k) : (k : ℕ∞) = G.dist u v := by
+  obtain ⟨⟨p, hp⟩, hk⟩ := h
+  refine le_antisymm (le_dist fun q => ?_) (hp ▸ dist_le_wlen p)
+  exact_mod_cast hk ⟨q, rfl⟩
 
 theorem wlen_toE (x : Input) {u v : Fin x.1} (p : x.2.1.Walk u v) :
     wlen (toE x).wg p = (p.darts.map fun d => x.2.2.1 ⟨d.edge, d.edge_mem⟩).sum := by

@@ -91,7 +91,7 @@ theorem sum_filter_length {β : Type*} (S : Finset ℕ) :
     have : ∀ a, (if decide (h.1 = a) = true then (h :: L.filter fun h => h.1 = a)
         else L.filter fun h => h.1 = a).length =
         (if h.1 = a then 1 else 0) + (L.filter fun h => h.1 = a).length := by
-      intro a; by_cases ha : h.1 = a <;> simp [ha] <;> omega
+      intro a; by_cases ha : h.1 = a <;> simp [ha]; omega
     rw [Finset.sum_congr rfl fun a _ => this a, Finset.sum_add_distrib,
       Finset.sum_ite_eq S h.1 (fun _ => 1), if_pos (hL h (List.mem_cons_self))]
     omega
@@ -101,7 +101,7 @@ theorem sum_adjX (x : EInput) :
   rw [← length_halves, ← List.length_reverse]
   have := sum_filter_length (Finset.range (x.wg.n + 1)) (halves x).reverse (fun h hh => by
     rw [List.mem_reverse] at hh
-    obtain ⟨a, b, _, rfl | rfl⟩ := mem_halves.1 hh <;> simp <;> omega)
+    obtain ⟨a, b, _, rfl | rfl⟩ := mem_halves.1 hh <;> simp)
   rw [← this]
   simp only [adjX, List.length_map]
 

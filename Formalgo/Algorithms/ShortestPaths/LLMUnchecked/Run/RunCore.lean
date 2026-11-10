@@ -97,7 +97,8 @@ theorem finish_run {src : ℕ} (hLn : L.n = x.wg.n) (hLD : L.D = Dn x.wg.n)
     omega
   · have hn : (ctxX x).n ≤ src := by change x.wg.n ≤ src; omega
     have hb : finish (ctxX x) src = blank := finish_invalid hn
-    have hst : start (ctxX x) src = blank := by simp only [start, if_neg (by omega : ¬src < (ctxX x).n)]
+    have hst : start (ctxX x) src = blank := by simp only [start, if_neg (by omega : ¬src <
+        (ctxX x).n)]
     rw [hb]
     rw [hst] at hR h12
     have hne : m 12 ≠ m 3 := by

@@ -224,7 +224,8 @@ theorem relaxBody_run (C : Ctx) {M : Finset ℕ} {u v w h : ℕ} {l : List (ℕ 
   rw [v₆] at g₇
   replace g₇ : m₇ 15 = s.stat v := g₇
   have R₇ := R₆.regs2 (r₁ := 2) (r₂ := 15) (by simp [Tmp]) (by simp [Tmp]) (by omega) (by omega) f₇
-  have F₇ : Frm L TR m₄ m₇ := (Frm.reg t15 (by omega) f₅ t2).trans ((Frm.reg1 t14 (by omega) f₆).trans
+  have F₇ : Frm L TR m₄ m₇ := (Frm.reg t15 (by omega) f₅ t2).trans ((Frm.reg1 t14
+      (by omega) f₆).trans
     (Frm.reg t15 (by omega) f₇ t2))
   have X₇ : Fixed L x m₇ := X₄.frame hH32 F₇.2
   have v₇ : m₇ 13 = v := by rw [f₇ 13 (by omega) (by omega), v₆]
@@ -244,7 +245,8 @@ theorem relaxBody_run (C : Ctx) {M : Finset ℕ} {u v w h : ℕ} {l : List (ℕ 
   refine Runs.seqs_cons (Runs.lessR (by omega) (by omega) (by omega) fun m₁₀ g₁₀ f₁₀ => ?_)
   refine Runs.seqs_nilR (by omega) fun m₁₁ g₁₁ f₁₁ => ?_
   have z₉ : m₉ 8 = 0 := by rw [f₉ 8 (by omega), R₈.zero]
-  have Fe : Frm L TR m₈ m₁₁ := (Frm.reg1 t31 (by omega) f₉).trans ((Frm.reg1 t11 (by omega) f₁₀).trans
+  have Fe : Frm L TR m₈ m₁₁ := (Frm.reg1 t31 (by omega) f₉).trans ((Frm.reg1 t11
+      (by omega) f₁₀).trans
     (Frm.reg1 t2 (by omega) f₁₁))
   have Ft : Frm L TR m m₁₁ := Fa.trans Fe
   have e31 : m₁₁ 31 = m h := by rw [f₁₁ 31 (by omega), f₁₀ 31 (by omega), n₉]

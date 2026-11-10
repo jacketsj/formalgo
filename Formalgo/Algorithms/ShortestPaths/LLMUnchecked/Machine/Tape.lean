@@ -44,7 +44,8 @@ theorem decodeMany_pair (hb : ∀ s : ℕ → V, cb.decode s = (bit (s 0), fun i
     simp only [Code.decodeMany, decode_pair hb hf, ih]
     funext i; congr 1
 
-theorem decode_digits_single [NeZero b] (hb : ∀ s : ℕ → V, cb.decode s = (bit (s 0), fun i => s (i + 1)))
+theorem decode_digits_single [NeZero b] (hb : ∀ s : ℕ → V, cb.decode s = (bit (s 0), fun i => s
+    (i + 1)))
     (hf : ∀ s : ℕ → V, cf.decode s = (dig (s 0), fun i => s (i + 1))) (s : ℕ → V)
     (h0 : bit (s 0) = true) (h2 : bit (s 2) = false) :
     (Code.digits b).decode s = ((dig (s 1)).val, fun i => s (i + 3)) := by
@@ -83,7 +84,8 @@ theorem decode_nat_word (hw : 0 < w) {v : ℕ} (hv : v < 2 ^ w) (s : ℕ → Bit
     (h0 : s 0 = 1) (h1 : s 1 = BitVec.ofNat w v) (h2 : s 2 = 0) :
     (Code.decode s : ℕ × (ℕ → BitVec w)) = (v, fun i => s (i + 3)) := by
   have := decode_digits_single (V := BitVec w) (b := 2 ^ w)
-    (cb := ⟨fun bit => [if bit then 1 else 0], fun stream => (stream 0 != 0, fun i => stream (i + 1))⟩)
+    (cb := ⟨fun bit => [if bit then 1 else 0], fun stream => (stream 0 != 0, fun i => stream
+        (i + 1))⟩)
     (cf := ⟨fun digit => [.ofFin digit], fun stream => ((stream 0).toFin, fun i => stream (i + 1))⟩)
     (bit := fun x => x != 0) (dig := BitVec.toFin) (fun _ => rfl) (fun _ => rfl) s
     (by simp [h0, Nat.pos_iff_ne_zero.1 hw]) (by simp [h2])
@@ -105,17 +107,23 @@ def ncode (x : α) : List ℕ := Code.encode x
 def wcode (w : ℕ) (x : α) : List (BitVec w) := Code.encode x
 
 theorem ncode_nat (v : ℕ) : ncode v = [v] := rfl
+omit [(w : ℕ) → Code α (BitVec w)] [(w : ℕ) → Code β (BitVec w)] in
 theorem ncode_prod (a : α) (b : β) : ncode (a, b) = ncode a ++ ncode b := rfl
+omit [(w : ℕ) → Code α (BitVec w)] in
 theorem ncode_list (l : List α) : ncode l = l.length :: l.flatMap ncode := rfl
+omit [Code α ℕ] [Code β ℕ] in
 theorem wcode_prod (w : ℕ) (a : α) (b : β) : wcode w (a, b) = wcode w a ++ wcode w b := rfl
+omit [Code α ℕ] in
 theorem wcode_list (w : ℕ) (l : List α) :
     wcode w l = wcode w l.length ++ l.flatMap (wcode w) := rfl
 
+omit [Code α ℕ] [(w : ℕ) → Code α (BitVec w)] [Code β ℕ] [(w : ℕ) → Code β (BitVec w)] in
 theorem decode_prod {V : Type*} [Code α V] [Code β V] (s : ℕ → V) :
     (Code.decode s : (α × β) × _) =
       (((Code.decode s : α × _).1, (Code.decode (Code.decode s : α × _).2 : β × _).1),
         (Code.decode (Code.decode s : α × _).2 : β × _).2) := rfl
 
+omit [Code α ℕ] [(w : ℕ) → Code α (BitVec w)] in
 theorem decode_list {V : Type*} [Code ℕ V] [Code α V] (s : ℕ → V) :
     (Code.decode s : List α × _) =
       Code.decodeMany (Code.decode s : ℕ × _).1 (Code.decode s : ℕ × _).2 := rfl
@@ -142,7 +150,8 @@ def Skips (x : α) : Prop :=
 theorem ReadsBack.skips {x : α} (h : ReadsBack x) : Skips x :=
   fun w hw hf s hs => by rw [h w hw hf s hs]
 
-theorem triples_append (w : ℕ) (a b : List ℕ) : triples w (a ++ b) = triples w a ++ triples w b := by
+theorem triples_append (w : ℕ) (a b : List ℕ) :
+    triples w (a ++ b) = triples w a ++ triples w b := by
   simp [triples]
 
 theorem StartsWith.append_left {V : Type*} {s : ℕ → V} {a b : List V}
@@ -158,9 +167,11 @@ theorem StartsWith.append_right {V : Type*} {s : ℕ → V} {a b : List V}
 theorem fits_nat {w v : ℕ} : Fits w v ↔ v < 2 ^ w := by
   simp [Fits, ncode_nat]
 
+omit [(w : ℕ) → Code α (BitVec w)] [(w : ℕ) → Code β (BitVec w)] in
 theorem fits_prod {w : ℕ} {a : α} {b : β} : Fits w (a, b) ↔ Fits w a ∧ Fits w b := by
   simp [Fits, ncode_prod, or_imp, forall_and]
 
+omit [(w : ℕ) → Code α (BitVec w)] in
 theorem fits_list {w : ℕ} {l : List α} :
     Fits w l ↔ l.length < 2 ^ w ∧ ∀ a ∈ l, Fits w a := by
   simp only [Fits, ncode_list, List.mem_cons, List.mem_flatMap]

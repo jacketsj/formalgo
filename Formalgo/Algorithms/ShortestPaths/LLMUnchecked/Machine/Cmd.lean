@@ -359,7 +359,8 @@ theorem Exec.run (hw : 0 < w) {c : Cmd} {m : Mem} {k : ℕ} {m' : Mem}
     obtain ⟨_, hate⟩ := At.cons hrest
     rw [Cmd.length_compile, show s + 1 + t.size + 1 = s + t.size + 2 by omega] at hate
     simp only [Cmd.size] at hlen
-    have h0 := run_line (hlines := hlines) hpc htest (exec_equal hT hl hr) (target := s + t.size + 2)
+    have h0 := run_line (hlines := hlines) hpc htest (exec_equal hT hl hr)
+      (target := s + t.size + 2)
       (by simp [hne]) (by omega)
     obtain ⟨T₁, h₁, hT₁⟩ := ihe hate (by omega) hT (pc := ⟨s + t.size + 2, by omega⟩) rfl
     refine ⟨T₁, ?_, hT₁⟩

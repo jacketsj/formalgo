@@ -95,7 +95,8 @@ theorem bases_spec {A ℓ : ℕ} (hH : L.H = A + ℓ) (H32 : 32 ≤ L.H) (h9 : m
   rw [h9, h4, ← hH] at g₁
   have r₁ : m₁ 12 = L.R := by rw [f₁ 12 (by decide), h12]
   clear h12 h9 h4 hH ht
-  refine Runs.seqs_cons (addBase (j := 0) (j' := 1) rfl (by decide) (by decide) (by decide) r₁ (by rw [g₁]; omega)
+  refine Runs.seqs_cons (addBase (j := 0) (j' := 1) rfl (by decide) (by decide) (by decide) r₁
+      (by rw [g₁]; omega)
     (by decide) H32 hB fun m₂ g₂ r₂ f₂ => ?_)
   refine Runs.seqs_cons (addBase (j := 1) (j' := 2) rfl (by decide) (by decide) (by decide) r₂ g₂
     (by decide) H32 hB fun m₃ g₃ r₃ f₃ => ?_)
@@ -194,9 +195,11 @@ theorem setup_run {n E ℓ A : ℕ} (hLn : L.n = n) (hLD : L.D = 2 * Nat.size n)
   refine Runs.seqs_cons (Runs.constR (by omega) (by omega) fun m₅ g₅ f₅ => ?_)
   refine Runs.seqs_cons (Runs.lessR (by omega) (by omega) (by omega) fun m₆ g₆ f₆ => ?_)
   have q₆ : ∀ a, a ≠ 2 → a ≠ 11 → a ≠ 12 → a ≠ 13 → a ≠ 14 → a ≠ 27 → m₆ a = m a :=
-    fun a a2 a11 a12 a13 a14 a27 => by rw [f₆ a a14, f₅ a a13, f₄ a a12, f₃ a a11, f₂ a a2, f₁ a a27]
+    fun a a2 a11 a12 a13 a14 a27 => by rw [f₆ a a14, f₅ a a13, f₄ a a12, f₃ a a11, f₂ a a2,
+        f₁ a a27]
   have v27 : m₆ 27 = n := by
-    rw [f₆ 27 (by omega), f₅ 27 (by omega), f₄ 27 (by omega), f₃ 27 (by omega), f₂ 27 (by omega), g₁]
+    rw [f₆ 27 (by omega), f₅ 27 (by omega), f₄ 27 (by omega), f₃ 27 (by omega), f₂ 27 (by omega),
+        g₁]
   have v12 : m₆ 12 = 1 := by rw [f₆ 12 (by omega), f₅ 12 (by omega), g₄]
   have v13 : m₆ 13 = 0 := by rw [f₆ 13 (by omega), g₅]
   have v14 : m₆ 14 = if n < 1 then 1 else 0 := by

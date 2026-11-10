@@ -62,7 +62,7 @@ theorem vm_update_high {S p v : ℕ} {m : Mem} (hp : nK ≤ p) (hpS : p < S ∨ 
     vm S (update m p v) = update (vm S m) p v := by
   funext a
   by_cases ha : a = p
-  · subst ha; simp only [vm, update_apply, if_pos rfl]; split_ifs <;> first | rfl | omega
+  · subst ha; simp only [vm, update_apply]; split_ifs <;> first | rfl | omega
   · simp only [vm, update_apply, ha, if_false]
     split_ifs <;> first | rfl | omega
 
@@ -99,19 +99,19 @@ theorem exec_vaddr {B S va : ℕ} {m : Mem} (hR : Regs S m) (hva : va < nK) (hva
   have hl := Exec.less (B := B) (m := m) (d := rT) (l := va) (r := rK) (by omega) (by omega)
     (by omega)
   set m₁ := update m rT (if m va < m rK then 1 else 0)
-  have h₁va : m₁ va = m va := by simp [m₁, update_apply, hvaT]
-  have h₁1 : m₁ rS = S := by simp [m₁, update_apply, h1]
-  have h₁3 : m₁ rOne = 1 := by simp [m₁, update_apply, h3]
+  have h₁va : m₁ va = m va := by simp [m₁, hvaT]
+  have h₁1 : m₁ rS = S := by simp [m₁, h1]
+  have h₁3 : m₁ rOne = 1 := by simp [m₁, h3]
   by_cases hlt : m va < nK
   · have e := Exec.iteTrue (B := B) (m := m₁) (l := rT) (r := rOne) (e := copy rP va)
-      (by omega) (by omega) (by simp [m₁, update_apply, h3, h5, hlt])
+      (by omega) (by omega) (by simp [m₁, h3, h5, hlt])
       (.add (m := m₁) (d := rP) (l := va) (r := rS) (by omega) (by omega) (by omega)
         (by rw [h₁va, h₁1]; omega))
     refine ⟨_, _, .seq hl e, by omega, ?_, ?_⟩
     · simp [paddr, hlt, h₁va, h₁1, Nat.add_comm]
     · intro a ha hb; simp [m₁, update_apply, ha, hb]
   · have e := Exec.iteFalse (B := B) (m := m₁) (l := rT) (r := rOne) (t := add rP va rS)
-      (by omega) (by omega) (by simp [m₁, update_apply, h3, h5, hlt])
+      (by omega) (by omega) (by simp [m₁, h3, h5, hlt])
       (.copy (m := m₁) (d := rP) (s := va) (by omega) (by omega))
     refine ⟨_, _, .seq hl e, by omega, ?_, ?_⟩
     · simp [paddr, hlt, h₁va]
@@ -141,7 +141,7 @@ theorem exec_vread {B S d va : ℕ} {m : Mem} (hR : Regs S m) (hva : va < nK) (h
   refine ⟨_, _, .seq e₁ e₂, by omega, (hR.of_frame h₁).update hdR, ?_, ?_, ?_⟩
   · simp [h₁P, paddr_read hKS hsrc h₁]
   · rw [vm_update_reg hd hKS, vm_of_frame hKS h₁]
-  · intro a ha hb hc; simp [update_apply, hc, h₁ a ha hb]
+  · intro a ha hb hc; simp [hc, h₁ a ha hb]
 
 theorem exec_vwrite {B S va src : ℕ} {m : Mem} (hR : Regs S m) (hva : va < nK) (hvaT : va ≠ rT)
     (hsrcK : src < nK) (hsrc : src ≠ rT ∧ src ≠ rP) (hKS : nK ≤ S) (hB : S + nK < B)
@@ -256,39 +256,39 @@ theorem vwrite {S va src : ℕ} (hR : Regs S m) (hva : va < nK) (hvaT : va ≠ r
 
 theorem constR {d v : ℕ} (hd : d < B) (hv : v < B)
     (h : ∀ m', m' d = v → (∀ a, a ≠ d → m' a = m a) → Q m' 1) : Runs B (.const d v) m Q :=
-  const hd hv (h _ (by simp) fun a ha => by simp [update_apply, ha])
+  const hd hv (h _ (by simp) fun a ha => by simp [ha])
 
 theorem copyR {d s : ℕ} (hd : d < B) (hs : s < B)
     (h : ∀ m', m' d = m s → (∀ a, a ≠ d → m' a = m a) → Q m' 1) : Runs B (.copy d s) m Q :=
-  copy hd hs (h _ (by simp) fun a ha => by simp [update_apply, ha])
+  copy hd hs (h _ (by simp) fun a ha => by simp [ha])
 
 theorem loadR {d p : ℕ} (hd : d < B) (hp : p < B)
     (h : ∀ m', m' d = m (m p) → (∀ a, a ≠ d → m' a = m a) → Q m' 1) : Runs B (.load d p) m Q :=
-  load hd hp (h _ (by simp) fun a ha => by simp [update_apply, ha])
+  load hd hp (h _ (by simp) fun a ha => by simp [ha])
 
 theorem storeR {p s : ℕ} (hp : p < B) (hs : s < B)
     (h : ∀ m', m' (m p) = m s → (∀ a, a ≠ m p → m' a = m a) → Q m' 1) :
     Runs B (.store p s) m Q :=
-  store hp hs (h _ (by simp) fun a ha => by simp [update_apply, ha])
+  store hp hs (h _ (by simp) fun a ha => by simp [ha])
 
 theorem addR {d l r : ℕ} (hd : d < B) (hl : l < B) (hr : r < B) (hlr : m l + m r < B)
     (h : ∀ m', m' d = m l + m r → (∀ a, a ≠ d → m' a = m a) → Q m' 1) :
     Runs B (.add d l r) m Q :=
-  add hd hl hr hlr (h _ (by simp) fun a ha => by simp [update_apply, ha])
+  add hd hl hr hlr (h _ (by simp) fun a ha => by simp [ha])
 
 theorem subR {d l r : ℕ} (hd : d < B) (hl : l < B) (hr : r < B) (hlr : m r ≤ m l)
     (h : ∀ m', m' d = m l - m r → (∀ a, a ≠ d → m' a = m a) → Q m' 1) :
     Runs B (.sub d l r) m Q :=
-  sub hd hl hr hlr (h _ (by simp) fun a ha => by simp [update_apply, ha])
+  sub hd hl hr hlr (h _ (by simp) fun a ha => by simp [ha])
 
 theorem lessR {d l r : ℕ} (hd : d < B) (hl : l < B) (hr : r < B)
     (h : ∀ m', m' d = (if m l < m r then 1 else 0) → (∀ a, a ≠ d → m' a = m a) → Q m' 1) :
     Runs B (.less d l r) m Q :=
-  less hd hl hr (h _ (by simp) fun a ha => by simp [update_apply, ha])
+  less hd hl hr (h _ (by simp) fun a ha => by simp [ha])
 
 theorem seqs_nilR (hB : 2 < B) (h : ∀ m', m' 2 = 0 → (∀ a, a ≠ 2 → m' a = m a) → Q m' 1) :
     Runs B (seqs []) m Q :=
-  seqs_nil hB (h _ (by simp) fun a ha => by simp [update_apply, ha])
+  seqs_nil hB (h _ (by simp) fun a ha => by simp [ha])
 
 end Runs
 
@@ -306,7 +306,7 @@ theorem vm_of_store {S p v : ℕ} {m m' : Mem} (hp : nK ≤ p) (hpS : p < S ∨ 
   have : m' = update m p v := by
     funext a; by_cases ha : a = p
     · subst ha; simp [hv]
-    · simp [update_apply, ha, h a ha]
+    · simp [ha, h a ha]
   rw [this, vm_update_high hp hpS]
 
 namespace Runs

@@ -10,32 +10,37 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {C : Ctx} {G : WGraph} {src W : ℕ}
+variable {R : Type*} [AddCommMonoid R] [LinearOrder R] [CanonicallyOrderedAdd R]
+  {C : CtxW R} {G : WGraphW R} {src : ℕ} {W : R}
 
 /-- The steps paid per settled vertex, apart from its edges. -/
-def perVertex (C : Ctx) : ℕ := 200 * (C.D + 1) + 20
+def perVertex (C : CtxW R) : ℕ := 200 * (C.D + 1) + 20
 
 /-- The invariant of the main loop. -/
-structure DInv (C : Ctx) (G : WGraph) (W : ℕ) (hs : src < G.n) (s : St) : Prop where
+structure DInv (C : CtxW R) (G : WGraphW R) (W : R) (hs : src < G.n) (s : StW R) : Prop where
   g : GInv hs s
   rel : Relaxed G 0 s
-  kb : ∀ v, s.stat v ≠ 0 → s.key v ≤ (done G.n s).card * W
+  /-- Keys are at most `W` per settled vertex. -/
+  keyle : ∀ v, s.stat v ≠ 0 → s.key v ≤ (done G.n s).card • W
   cost : s.time + 65 * pot s (hset G.n s) ≤
     65 + (done G.n s).card * perVertex C + (∑ v ∈ done G.n s, (C.adj v).length) * 325
 
-theorem Forest.setStat {s : St} {M : Finset ℕ} {e : ℕ} (h : Forest s M e) (v k : ℕ) :
+omit [AddCommMonoid R] [CanonicallyOrderedAdd R] in
+theorem Forest.setStat {s : StW R} {M : Finset ℕ} {e : ℕ} (h : Forest s M e) (v k : ℕ) :
     Forest (setStat v k s) M e :=
   h.congr rfl rfl rfl rfl (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl)
     (fun _ _ _ => rfl)
 
-theorem RootList.setStat {s : St} {M L : Finset ℕ} (h : RootList s M L) (v k : ℕ) :
+omit [AddCommMonoid R] [CanonicallyOrderedAdd R] in
+omit [LinearOrder R] in
+theorem RootList.setStat {s : StW R} {M L : Finset ℕ} (h : RootList s M L) (v k : ℕ) :
     RootList (setStat v k s) M L :=
   h.congr (fun _ _ => rfl) rfl rfl (fun _ _ _ => rfl)
 
 /-- The state after extracting the minimum starts the scan. -/
-theorem DInv.scan_start (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : St}
+theorem DInv.scan_start (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : StW R}
     (h : DInv C G W hs s) (hc : rootsCond s) {u' : Fin G.n} (hu'1 : (u' : ℕ) + 1 = s.hmin) :
-    ScanInv (C := C) (W := W) hs u' (((done G.n s).card + 1) * W)
+    ScanInv (C := C) (W := W) hs u' (((done G.n s).card + 1) • W)
       ((setStat s.hmin 2 (extract C s)).time +
         65 * pot (setStat s.hmin 2 (extract C s)) (hset G.n (setStat s.hmin 2 (extract C s))) +
         325 * (C.adj ((u' : ℕ) + 1)).length) []
@@ -47,7 +52,7 @@ theorem DInv.scan_start (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : 
   obtain ⟨m1, m2, m3⟩ := hg.heap.min hne
   obtain ⟨hun, hu0, hu1⟩ := mem_hset.1 m1
   set u := s.hmin with hu
-  have hkeq : (s.key u : ℕ∞) = G.dist ⟨src, hs⟩ u' := by
+  have hkeq : IsLeast (Set.range fun p : G.graph.Walk ⟨src, hs⟩ u' => wlen G p) (s.key u) := by
     rw [← hu'1]
     refine key_min_eq hg hrel (by rw [hu'1]; exact hu1) fun y hy => ?_
     rw [hu'1]; exact m3 _ (mem_hset.2 ⟨by have := y.2; omega, by omega, hy⟩)
@@ -96,7 +101,7 @@ theorem DInv.scan_start (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : 
   · rw [hke]
     rcases eq_or_ne ((x : ℕ) + 1) u with h | hxu
     · have : x = u' := Fin.ext (by omega)
-      subst this; rw [hu'1, ← hkeq]
+      subst this; rw [hu'1]; obtain ⟨⟨p, hp⟩, -⟩ := hkeq; exact ⟨p, hp.le⟩
     · rw [hst _ hxu] at hx; exact hg.upper x hx
   · rw [hke]
     refine ⟨?_, hg.source.2⟩
@@ -115,13 +120,14 @@ theorem DInv.scan_start (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : 
     · rw [hst _ hbu]; exact ⟨h1, h2⟩
   · rw [hke]
     rcases eq_or_ne x u with h | hxu
-    · rw [h]; have := hkb u (by omega); rw [Nat.succ_mul]; omega
-    · rw [hst x hxu] at hx; have := hkb x hx; rw [Nat.succ_mul]; omega
-  · rw [hke, hu'1, Nat.succ_mul]; have := hkb u (by omega); omega
+    · rw [h, succ_nsmul]; exact (hkb u (by omega)).trans le_self_add
+    · rw [hst x hxu] at hx; rw [succ_nsmul]; exact (hkb x hx).trans le_self_add
+  · rw [hke, hu'1, succ_nsmul]; exact add_le_add (hkb u (by omega)) le_rfl
 
-theorem DInv.step (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : St}
+theorem DInv.step (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : StW R}
     (h : DInv C G W hs s) (hc : rootsCond s) :
-    DInv C G W hs (mainStep C s) ∧ G.n - (done G.n (mainStep C s)).card < G.n - (done G.n s).card := by
+    DInv C G W hs (mainStep C s) ∧
+      G.n - (done G.n (mainStep C s)).card < G.n - (done G.n s).card := by
   have hD := h
   obtain ⟨hg, hrel, hkb, hcost⟩ := h
   simp only [rootsCond] at hc
@@ -132,10 +138,6 @@ theorem DInv.step (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : St}
   set u := s.hmin with hu
   set u' : Fin G.n := ⟨u - 1, by omega⟩ with hu'
   have hu'1 : (u' : ℕ) + 1 = u := by simp only [hu']; omega
-  have hkeq : (s.key u : ℕ∞) = G.dist ⟨src, hs⟩ u' := by
-    rw [← hu'1]
-    refine key_min_eq hg hrel (by rw [hu'1]; exact hu1) fun y hy => ?_
-    rw [hu'1]; exact m3 _ (mem_hset.2 ⟨by have := y.2; omega, by omega, hy⟩)
   -- Extracting `u`.
   have hH : HeapInv C.n s M := by rw [hA.n_eq]; exact hg.heap
   obtain ⟨hH1, hk1, hc1, he1⟩ := extract_spec C hC hH hne
@@ -158,7 +160,7 @@ theorem DInv.step (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : St}
     · rw [hsu]; simp; omega
     · rw [hst x hx]; simp [hx]
   have hund : u ∉ done G.n s := fun h => by have := (mem_done.1 h).2.2; omega
-  have hI : ScanInv (C := C) (W := W) hs u' (((done G.n s).card + 1) * W)
+  have hI : ScanInv (C := C) (W := W) hs u' (((done G.n s).card + 1) • W)
       (s₂.time + 65 * pot s₂ (hset G.n s₂) + 325 * (C.adj ((u' : ℕ) + 1)).length) []
       s₂ (C.adj ((u' : ℕ) + 1)) := hD.scan_start hC hA hc hu'1
   obtain ⟨hI3, hst3⟩ := scan_loop hC hA hI
@@ -172,7 +174,7 @@ theorem DInv.step (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : St}
     rw [hdone3, Finset.card_insert_of_notMem hund]
   refine ⟨⟨hI3.g.tick 20, hI3.relaxed hA, ?_, ?_⟩, ?_⟩
   · intro x hx
-    change t₃.key x ≤ (done G.n t₃).card * W
+    change t₃.key x ≤ (done G.n t₃).card • W
     rw [hcard]; exact hI3.kb x hx
   · change t₃.time + 20 + 65 * pot t₃ (hset G.n t₃) ≤ 65 + (done G.n t₃).card * perVertex C +
       (∑ v ∈ done G.n t₃, (C.adj v).length) * 325
@@ -188,5 +190,10 @@ theorem DInv.step (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {s : St}
     omega
   · change G.n - (done G.n t₃).card < _
     rw [hcard]; have := card_done_le G.n t₃; rw [hcard] at this; omega
+
+/-- For natural weights, keys are at most `W` per settled vertex. -/
+theorem DInv.kb {C : Ctx} {G : WGraph} {W : ℕ} {hs : src < G.n} {s : St} (h : DInv C G W hs s) :
+    ∀ v, s.stat v ≠ 0 → s.key v ≤ (done G.n s).card * W :=
+  fun v hv => (smul_eq_mul (done G.n s).card W) ▸ h.keyle v hv
 
 end Formalgo.Algorithms.ShortestPaths

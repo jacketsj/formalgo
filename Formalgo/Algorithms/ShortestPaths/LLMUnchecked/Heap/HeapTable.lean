@@ -10,12 +10,16 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {s : St} {M : Finset ℕ} {e : ℕ}
+variable {R : Type*} [LinearOrder R]
 
+variable {s : StW R} {M : Finset ℕ} {e : ℕ}
+
+omit [LinearOrder R] in
 theorem tset_zero {D : ℕ} (h : ∀ d, s.tbl d = 0) : tset D s = ∅ := by
   ext v; simp only [mem_tset, h, Finset.notMem_empty, iff_false, not_and]
   rintro hv ⟨d, _, hd⟩; exact hv hd.symm
 
+omit [LinearOrder R] in
 /-- The root array holds at most `|M|` roots. -/
 theorem RootList.deg0_le {L : Finset ℕ} (h : RootList s M L) : s.deg 0 ≤ M.card := by
   have : (Finset.range (s.deg 0)).image (s.ch 0) ⊆ M := by
@@ -48,7 +52,7 @@ theorem Forest.root_le (h : Forest s M e) : ∀ w ∈ M, ∃ r ∈ M, s.par r = 
 /-! ### The table loop -/
 
 /-- The invariant of the table loop. -/
-structure TabInv (D : ℕ) (M : Finset ℕ) (Q : ℕ) (s₀ : St) (a : St × ℕ) : Prop where
+structure TabInv (D : ℕ) (M : Finset ℕ) (Q : ℕ) (s₀ : StW R) (a : StW R × ℕ) : Prop where
   forest : Forest a.1 M 0
   roots : RootList a.1 M (tset D a.1)
   tbl : TblInv D M a.1
@@ -60,8 +64,9 @@ structure TabInv (D : ℕ) (M : Finset ℕ) (Q : ℕ) (s₀ : St) (a : St × ℕ
   cost : a.1.time + 65 * pot a.1 M + 40 * (tset D a.1).card + 105 * (D + 1 - a.2) ≤ Q
   keep : Keep M s₀ a.1
 
-theorem TabInv.step (C : Ctx) {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : TabInv C.D M Q s₀ a)
-    (hc : tabCond C a) : TabInv C.D M Q s₀ (tabStep a) ∧ C.D + 1 - (tabStep a).2 < C.D + 1 - a.2 := by
+theorem TabInv.step (C : CtxW R) {Q : ℕ} {s₀ : StW R} {a : StW R × ℕ} (h : TabInv C.D M Q s₀ a)
+    (hc : tabCond C a) :
+    TabInv C.D M Q s₀ (tabStep a) ∧ C.D + 1 - (tabStep a).2 < C.D + 1 - a.2 := by
   obtain ⟨s, d⟩ := a
   obtain ⟨hF, hR, hT, hlow, hdle, hm0, hm1, hQ, hk⟩ := h
   simp only [tabCond] at hc hF hR hT hlow hdle hm0 hm1 hQ hk
@@ -81,7 +86,7 @@ theorem TabInv.step (C : Ctx) {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : TabInv 
     have hx0 := ne_zero_of_mem hF hxM
     set s₂ := attach x 0 (setTbl d 0 s) with hs₂
     have e : tabStep (s, d) = (tick 40 (updMin x s₂), d + 1) := by
-      show (tick 40 (if x = 0 then s else updMin x (attach x 0 (setTbl d 0 s))), d + 1) = _
+      change (tick 40 (if x = 0 then s else updMin x (attach x 0 (setTbl d 0 s))), d + 1) = _
       rw [if_neg hx]
     rw [e]
     have hts : tset C.D s₂ = (tset C.D s).erase x := tset_setTbl_zero hT hx
@@ -93,7 +98,7 @@ theorem TabInv.step (C : Ctx) {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : TabInv 
     have hcard := Finset.card_erase_of_mem hxT
     have hpos := Finset.card_pos.2 ⟨x, hxT⟩
     -- What `updMin` leaves alone.
-    have hU : ∀ t : St, (updMin x t).par = t.par ∧ (updMin x t).deg = t.deg ∧
+    have hU : ∀ t : StW R, (updMin x t).par = t.par ∧ (updMin x t).deg = t.deg ∧
         (updMin x t).tbl = t.tbl ∧ (updMin x t).key = t.key ∧ (updMin x t).time = t.time ∧
         (updMin x t).mark = t.mark ∧ (updMin x t).stat = t.stat := by
       intro t; unfold St.updMin; split_ifs <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
@@ -146,10 +151,10 @@ theorem TabInv.step (C : Ctx) {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : TabInv 
         · refine ⟨hxM, hxp, Finset.notMem_erase x _, fun r hr hrp hrT => ?_⟩
           rcases eq_or_ne r x with rfl | hrx
           · exact le_refl _
-          · have := n4 r hr hrp (hold r hr hrp hrT hrx); omega
+          · have := n4 r hr hrp (hold r hr hrp hrT hrx); exact (hlt.trans_le this).le
         · refine ⟨n1, n2, fun hm => n3 (Finset.mem_of_mem_erase hm), fun r hr hrp hrT => ?_⟩
           rcases eq_or_ne r x with rfl | hrx
-          · omega
+          · exact not_lt.1 hlt
           · exact n4 r hr hrp (hold r hr hrp hrT hrx)
     · rw [htsU]
       have hm : marked (tick 40 (updMin x s₂)) M = marked s M := by
@@ -169,7 +174,7 @@ theorem TabInv.step (C : Ctx) {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : TabInv 
       · change (updMin x s₂).mark w = s.mark w; rw [u6]; rfl
       · change (updMin x s₂).par w = s.par w; rw [u1, hpar]
 
-theorem tab_loop (C : Ctx) {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : TabInv C.D M Q s₀ a)
+theorem tab_loop (C : CtxW R) {Q : ℕ} {s₀ : StW R} {a : StW R × ℕ} (h : TabInv C.D M Q s₀ a)
     (hFu : C.D + 1 ≤ C.F) :
     TabInv C.D M Q s₀ (whileF (tabCond C) tabStep C.F a) ∧
       ¬tabCond C (whileF (tabCond C) tabStep C.F a) :=

@@ -5,6 +5,7 @@ import Formalgo.Core.Program
 import Formalgo.Core.Run
 import Formalgo.Core.RAM
 import Formalgo.Core.IntegerRAM
+import Formalgo.Core.RealRAM
 import Formalgo.Core.WordRAM
 import Formalgo.Core.TDWordRAM
 import Formalgo.Core.TDAlgorithm
@@ -13,6 +14,8 @@ import Formalgo.Core.Runnable
 import Formalgo.Core.Algorithm
 import Formalgo.Core.Code
 import Formalgo.Core.Code.Graph
+import Formalgo.Core.Code.Real
 import Formalgo.Algorithms.Sorting.Statement
 import Formalgo.Algorithms.Sorting.Proof
 import Formalgo.Algorithms.ShortestPaths.Statement
+import Formalgo.Complexity.Sorting.Statement

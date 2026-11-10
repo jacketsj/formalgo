@@ -1,10 +1,15 @@
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.Proof
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.RealRun.RFinal
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.AllPairs.Proof
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.AllPairs.RealProof
 
 /-!
 # Single-source shortest paths
 -/
 
 namespace Formalgo.Algorithms.ShortestPaths
+
+open NNReal
 
 /-- The number of vertices `n`, a graph on `Fin n`, a weight in `W` on each edge, and a source. -/
 abbrev Input (W : Type*) := Σ n, Σ G : SimpleGraph (Fin n), (G.edgeSet → W) × ℕ
@@ -22,11 +27,43 @@ def singleSourceShortestPaths (W : Type*) [AddMonoid W] [LE W] :
     G.Connected → ∀ h : source < n, ∃ d : Fin n → W, output = ⟨n, d⟩ ∧
       ∀ v, IsLeast {walkWeight W weight p | p : G.Walk ⟨source, h⟩ v} (d v)
 
+/-- The number of vertices `n`, a graph on `Fin n`, and a weight in `W` on each edge. -/
+abbrev AllPairsInput (W : Type*) := Σ n, Σ G : SimpleGraph (Fin n), G.edgeSet → W
+
+/-- All-pairs shortest paths: if the graph is connected, the weight of a lightest walk between
+each pair of vertices. -/
+def allPairsShortestPaths (W : Type*) [AddMonoid W] [LE W] :
+    IOSpec (AllPairsInput W) (Σ n, Fin n → Fin n → W) where
+  valid := fun ⟨n, G, weight⟩ output =>
+    G.Connected → ∃ d : Fin n → Fin n → W, output = ⟨n, d⟩ ∧
+      ∀ u v, IsLeast {walkWeight W weight p | p : G.Walk u v} (d u v)
+
 /-- A TD word RAM with `<`, `+` and `−` finds single-source shortest paths in `O(E + V log V)`
 steps (Dijkstra's algorithm with a Fibonacci heap). -/
 theorem singleSourceShortestPathsInEPlusVLogV :
     ∃ c, (tdWordRAM [.less, .add, .sub]).SolvableWithin (singleSourceShortestPaths ℕ)
       fun ⟨V, G, _⟩ => c * (G.edgeSet.ncard + V * Nat.log 2 V) + c :=
   shortestPaths_wordRAM _ fun _ _ _ _ _ h => h
+
+/-- A real RAM with `<`, `+` and `−` finds single-source shortest paths with nonnegative real
+weights in `O(E + V log V)` steps (Dijkstra's algorithm with a Fibonacci heap). -/
+theorem singleSourceShortestPathsInEPlusVLogV_realRAM :
+    ∃ c, RealRAM.withAddSub.semantics.SolvableWithin (singleSourceShortestPaths ℝ≥0)
+      fun ⟨V, G, _⟩ => c * (G.edgeSet.ncard + V * Nat.log 2 V) + c :=
+  shortestPaths_realRAM _ fun _ _ _ _ _ h => h
+
+/-- A TD word RAM with `<`, `+` and `−` finds all-pairs shortest paths in `O(V³)` steps
+(the Floyd–Warshall algorithm). -/
+theorem allPairsShortestPathsInVCubed :
+    ∃ c, (tdWordRAM [.less, .add, .sub]).SolvableWithin (allPairsShortestPaths ℕ)
+      fun ⟨V, _, _⟩ => c * V ^ 3 + c :=
+  allPairs_wordRAM _ fun _ _ _ _ h => h
+
+/-- A real RAM with `<`, `+` and `−` finds all-pairs shortest paths with nonnegative real weights
+in `O(V³)` steps (the Floyd–Warshall algorithm). -/
+theorem allPairsShortestPathsInVCubed_realRAM :
+    ∃ c, RealRAM.withAddSub.semantics.SolvableWithin (allPairsShortestPaths ℝ≥0)
+      fun ⟨V, _, _⟩ => c * V ^ 3 + c :=
+  allPairs_realRAM _ fun _ _ _ _ h => h
 
 end Formalgo.Algorithms.ShortestPaths

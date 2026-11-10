@@ -61,7 +61,7 @@ theorem length_edges : (lexEdges G).length = G.edgeSet.ncard := by
         rcases h with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
         · exact hcd
         · exact hcd.symm
-  rw [himg, Set.ncard_image_of_injOn hinj,
+  rw [himg, hinj.ncard_image,
     show {e | e ∈ lexEdges G} = ((lexEdges G).toFinset : Set (Fin n × Fin n)) by ext; simp,
     Set.ncard_coe_finset, List.toFinset_card_of_nodup nodup_edges]
 

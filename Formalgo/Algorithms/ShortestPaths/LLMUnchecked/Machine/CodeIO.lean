@@ -29,7 +29,6 @@ def CodeRegs (S ℓ A : ℕ) (m : Mem) : Prop :=
 /-- Load the code `c` into `A[0, ℓ)`. -/
 def loadCode : Cmd := seqs [const 11 0, const 12 4, less 15 11 4, loop 15 3 loadBody]
 
-set_option maxHeartbeats 1000000 in
 theorem exec_loadCode {B S ℓ A : ℕ} {m : Mem} {c : List ℕ} (hc : c.length = ℓ)
     (hR : CodeRegs S ℓ A m) (hKS : nK ≤ S) (hA : A = S + nK) (hB : A + ℓ + nK < B)
     (hx : ∀ j < ℓ, vm S m (3 * j + 4) = c[j]!) (hcB : ∀ j < ℓ, c[j]! < B)
@@ -84,7 +83,8 @@ theorem exec_loadCode {B S ℓ A : ℕ} {m : Mem} {c : List ℕ} (hc : c.length 
   · rintro m' k ⟨⟨⟨r1, r3, r5⟩, r4, r8, r9, r16⟩, hd, hfr, hk⟩
     rstep
     rename_i m₄ g₄ f₄ v₄
-    refine ⟨⟨⟨by rsd, by rsd, by rsd⟩, by rsd, by rsd, by rsd, by rsd⟩, fun j hj => by rw [v₄]; exact hd j hj,
+    refine ⟨⟨⟨by rsd, by rsd, by rsd⟩, by rsd, by rsd, by rsd, by rsd⟩,
+      fun j hj => by rw [v₄]; exact hd j hj,
       fun a ha => by rw [v₄]; exact hfr a ha, by omega⟩
 
 /-- Write `[1, Z[i], 0]` at `va`. -/
@@ -95,7 +95,6 @@ def emitBodyC : Cmd := seqs [vwrite 12 3, add 12 12 3, add 13 10 11, load 14 13,
 def emitCode : Cmd := seqs [add 18 4 4, add 18 18 4, add 18 18 16, copy 12 18, const 11 0,
   less 15 11 17, loop 15 3 emitBodyC]
 
-set_option maxHeartbeats 1000000 in
 theorem exec_emitCode {B S ℓ A Z μ : ℕ} {m : Mem} {z : List ℕ} (hz : z.length = μ)
     (hR : CodeRegs S ℓ A m) (h10 : m 10 = Z) (h17 : m 17 = μ) (hKS : nK ≤ S)
     (hZ : S + nK ≤ Z) (hB : Z + μ < B) (hzv : ∀ j < μ, vm S m (Z + j) = z[j]!)

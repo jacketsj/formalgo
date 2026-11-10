@@ -15,12 +15,14 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St
 
+variable {R : Type*} [LinearOrder R]
+
 /-- The siblings of `v` linked before it. -/
-def older (s : St) (M : Finset ℕ) (v : ℕ) : ℕ :=
+def older (s : StW R) (M : Finset ℕ) (v : ℕ) : ℕ :=
   (M.filter fun c => s.par c = s.par v ∧ s.lt c < s.lt v).card
 
 /-- The trees of the heap. -/
-structure Forest (s : St) (M : Finset ℕ) (e : ℕ) : Prop where
+structure Forest (s : StW R) (M : Finset ℕ) (e : ℕ) : Prop where
   zero : 0 ∉ M
   up : ∀ v ∈ M, s.par v ≠ 0 →
     s.par v ∈ M ∧ s.pos v < s.deg (s.par v) ∧ s.ch (s.par v) (s.pos v) = v
@@ -33,12 +35,12 @@ structure Forest (s : St) (M : Finset ℕ) (e : ℕ) : Prop where
   mark : ∀ v ∈ M, s.mark v ≤ 1
 
 /-- The root array lists the roots not in `L`. -/
-structure RootList (s : St) (M L : Finset ℕ) : Prop where
+structure RootList (s : StW R) (M L : Finset ℕ) : Prop where
   loose : ∀ v ∈ L, v ∈ M ∧ s.par v = 0
   list : ∀ j < s.deg 0, s.ch 0 j ∈ M ∧ s.ch 0 j ∉ L ∧ s.par (s.ch 0 j) = 0 ∧ s.pos (s.ch 0 j) = j
   root : ∀ v ∈ M, s.par v = 0 → v ∉ L → s.pos v < s.deg 0 ∧ s.ch 0 (s.pos v) = v
 
-variable {s s' : St} {M L : Finset ℕ} {e : ℕ}
+variable {s s' : StW R} {M L : Finset ℕ} {e : ℕ}
 
 /-! ### Changing fields the invariants do not see -/
 
@@ -64,6 +66,7 @@ theorem Forest.congr (h : Forest s M e) (hpar : s'.par = s.par) (hlt : s'.lt = s
   · rw [hpar] at hp; rw [hlt, hclock]; exact h.ltclock v hv hp
   · rw [hmark v hv]; exact h.mark v hv
 
+omit [LinearOrder R] in
 theorem RootList.congr (h : RootList s M L) (hpar : ∀ v ∈ M, s'.par v = s.par v)
     (hdeg : s'.deg 0 = s.deg 0) (hch : s'.ch 0 = s.ch 0)
     (hpos : ∀ v ∈ M, s.par v = 0 → s'.pos v = s.pos v) : RootList s' M L := by

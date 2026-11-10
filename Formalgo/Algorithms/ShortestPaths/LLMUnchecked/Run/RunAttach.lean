@@ -80,7 +80,8 @@ theorem attach_spec (hR : Rep L σ m) (hF : Fixed L x m) {rv rp : ℕ} (hv : m r
   refine Runs.seqs_cons (Runs.addR (by omega) (by omega) (by omega)
     (by rw [h₁6, f₁ 3 (by omega) (by omega), hR.one]; omega) fun m₂ h₂ f₂ => ?_)
   have F₂ : Frm L T267 m m₂ := F₁.trans (Frm.reg1 (by simp [T267]) (by omega) f₂)
-  have R₂ : Rep L σ m₂ := R₁.reg (T := T267) (fun a ha => by rcases ha with h | h | h <;> simp [Tmp, h])
+  have R₂ : Rep L σ m₂ :=
+    R₁.reg (T := T267) (fun a ha => by rcases ha with h | h | h <;> simp [Tmp, h])
     (Frm.reg1 (by simp [T267]) (by omega) f₂) (fun a ha => f₂ a (by omega))
   have r₂ : ∀ r, r < 32 → ¬T267 r → m₂ r = m r := F₂.1
   have h₂7 : m₂ 7 = d + 1 := by rw [h₂, h₁6, f₁ 3 (by omega) (by omega), hR.one]
@@ -172,7 +173,8 @@ theorem detach_spec (hR : Rep L σ m) (hF : Fixed L x m) {rv rp : ℕ} (hv : m r
   rw [r₃ rp hrp (by simp [T267]; omega), h₃6] at h₄
   have F₄ : Frm L T267 m m₄ := F₃.trans (Frm.reg (by simp [T267]) (by omega) f₄ (by simp [T267]))
   have R₄ : Rep L (setFld 3 (m rp) (σ.deg (m rp) - 1) σ) m₄ := R₃.reg tT
-    (Frm.reg (by simp [T267]) (by omega) f₄ (by simp [T267])) (fun a ha => f₄ a (by omega) (by omega))
+    (Frm.reg (by simp [T267]) (by omega) f₄ (by simp [T267])) (fun a ha => f₄ a (by omega)
+        (by omega))
   have r₄ : ∀ r, r < 32 → ¬T267 r → m₄ r = m r := F₄.1
   have h₄7 : m₄ 7 = σ.ch (m rp) (σ.deg (m rp) - 1) := h₄
   -- `M[6] := pos V`
@@ -182,7 +184,8 @@ theorem detach_spec (hR : Rep L σ m) (hF : Fixed L x m) {rv rp : ℕ} (hv : m r
   rw [r₄ rv hrv (by simp [T267]; omega)] at h₅
   have F₅ : Frm L T267 m m₅ := F₄.trans (Frm.reg (by simp [T267]) (by omega) f₅ (by simp [T267]))
   have R₅ : Rep L (setFld 3 (m rp) (σ.deg (m rp) - 1) σ) m₅ := R₄.reg tT
-    (Frm.reg (by simp [T267]) (by omega) f₅ (by simp [T267])) (fun a ha => f₅ a (by omega) (by omega))
+    (Frm.reg (by simp [T267]) (by omega) f₅ (by simp [T267])) (fun a ha => f₅ a (by omega)
+        (by omega))
   have r₅ : ∀ r, r < 32 → ¬T267 r → m₅ r = m r := F₅.1
   have h₅6 : m₅ 6 = σ.pos (m rv) := h₅
   have h₅7 : m₅ 7 = σ.ch (m rp) (σ.deg (m rp) - 1) := by rw [f₅ 7 (by omega) (by omega), h₄7]
@@ -264,17 +267,20 @@ theorem updMin_spec (hR : Rep L σ m) (hF : Fixed L x m) {rv : ℕ} (hv : m rv �
     refine Runs.seqs_cons (Runs.mono (rd_spec hR (k := 0) (d := 6) (i := rv) (by omega)
       (by simp [Lay.bnd]; omega) (by omega) (by omega) hrv hB) fun m₁ c₁ ⟨h₁, f₁, hc₁⟩ => ?_)
     have R₁ : Rep L σ m₁ := hR.reg (T := T267) tT
-      (Frm.reg (by simp [T267]) (by omega) f₁ (by simp [T267])) (fun a ha => f₁ a (by omega) (by omega))
+      (Frm.reg (by simp [T267]) (by omega) f₁ (by simp [T267])) (fun a ha => f₁ a (by omega)
+          (by omega))
     refine Runs.seqs_cons (Runs.mono (rd_spec R₁ (k := 0) (d := 7) (i := 29) (by omega)
       (by rw [f₁ 29 (by omega) (by omega), hhi29]; simp [Lay.bnd]; omega) (by omega) (by omega)
       (by omega) hB) fun m₂ c₂ ⟨h₂, f₂, hc₂⟩ => ?_)
     have R₂ : Rep L σ m₂ := R₁.reg (T := T267) tT
-      (Frm.reg (by simp [T267]) (by omega) f₂ (by simp [T267])) (fun a ha => f₂ a (by omega) (by omega))
+      (Frm.reg (by simp [T267]) (by omega) f₂ (by simp [T267])) (fun a ha => f₂ a (by omega)
+          (by omega))
     rw [f₁ 29 (by omega) (by omega), hhi29] at h₂
     refine Runs.seqs_cons (Runs.lessR (by omega) (by omega) (by omega) fun m₃ h₃ f₃ => ?_)
     have h₃6 : m₃ 6 = if σ.key (m rv) < σ.key σ.hmin then 1 else 0 := by
       rw [h₃, f₂ 6 (by omega) (by omega), h₁, h₂]; rfl
-    have F₃ : Frm L T29 m m₃ := (Frm.reg (by simp [T29, T267]) (by omega) f₁ (by simp [T29, T267])).trans
+    have F₃ : Frm L T29 m m₃ := (Frm.reg (by simp [T29, T267]) (by omega) f₁ (by simp [T29,
+        T267])).trans
       ((Frm.reg (by simp [T29, T267]) (by omega) f₂ (by simp [T29, T267])).trans
         (Frm.reg1 (by simp [T29, T267]) (by omega) f₃))
     have R₃ : Rep L σ m₃ := R₂.reg (T := T267) tT (Frm.reg1 (by simp [T267]) (by omega) f₃)
@@ -291,7 +297,8 @@ theorem updMin_spec (hR : Rep L σ m) (hF : Fixed L x m) {rv : ℕ} (hv : m rv �
         (Frm.reg1 (by simp [T29, T267]) (by omega) f₅))
       refine ⟨?_, hF.frame hH F₅.2, F₅, by omega⟩
       have nt : ∀ a, ¬Tmp a → a ≠ 2 ∧ a ≠ 6 ∧ a ≠ 7 := fun a ha =>
-        ⟨fun h => ha (by simp [Tmp, h]), fun h => ha (by simp [Tmp, h]), fun h => ha (by simp [Tmp, h])⟩
+        ⟨fun h => ha (by simp [Tmp, h]), fun h => ha (by simp [Tmp, h]), fun h => ha (by simp [Tmp,
+            h])⟩
       refine hR.setHmin _ (fun a ha hT _ => ?_) (fun a ha => ?_) ?_
       · obtain ⟨a2, a6, a7⟩ := nt a hT
         rw [f₅ a a2, f₄ a ha, f₃ a a6, f₂ a a2 a7, f₁ a a2 a6]

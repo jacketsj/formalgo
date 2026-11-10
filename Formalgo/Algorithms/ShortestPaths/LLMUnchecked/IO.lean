@@ -20,7 +20,8 @@ theorem flatMap_ncode_pairs (l : List (ℕ × ℕ)) :
     l.flatMap ncode = l.flatMap fun p => [p.1, p.2] := by
   induction l with
   | nil => rfl
-  | cons p l ih => rw [List.flatMap_cons, List.flatMap_cons, ih, ncode_prod, ncode_nat, ncode_nat]; rfl
+  | cons p l ih =>
+    rw [List.flatMap_cons, List.flatMap_cons, ih, ncode_prod, ncode_nat, ncode_nat]; rfl
 
 theorem flatMap_ncode_nats (l : List ℕ) : l.flatMap ncode = l := by
   induction l with

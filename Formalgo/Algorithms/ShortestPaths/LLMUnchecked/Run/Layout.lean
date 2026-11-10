@@ -116,7 +116,8 @@ theorem cb_inj {v j v' j' : ℕ} (hj : j < L.cap v) (hj' : j' < L.cap v')
   · have e : (v - 1) * (L.D + 1) + j = (v' - 1) * (L.D + 1) + j' := by omega
     have h3 := congrArg (· / (L.D + 1)) e
     have h4 := congrArg (· % (L.D + 1)) e
-    simp only [Nat.mul_comm (v - 1), Nat.mul_comm (v' - 1), Nat.mul_add_div (by omega : 0 < L.D + 1),
+    simp only [Nat.mul_comm (v - 1), Nat.mul_comm (v' - 1), Nat.mul_add_div
+        (by omega : 0 < L.D + 1),
       Nat.mul_add_mod, Nat.div_eq_of_lt hj, Nat.div_eq_of_lt hj', Nat.mod_eq_of_lt hj,
       Nat.mod_eq_of_lt hj'] at h3 h4
     omega
@@ -142,7 +143,8 @@ theorem Rep.congr (h : Rep L σ m) (hm : ∀ a, ¬Tmp a → a < 32 → m' a = m 
   · rw [hhi _ (by have := cb_slot hv hj; have := h.H32; have := CH_ge (L := L); omega)]
     exact h.ch v hv j hj
 
-theorem fld_setFld_self {k i v : ℕ} (hk : k < 7) : fld (setFld k i v σ) k = update (fld σ k) i v := by
+theorem fld_setFld_self {k i v : ℕ} (hk : k < 7) :
+    fld (setFld k i v σ) k = update (fld σ k) i v := by
   rcases k with _ | _ | _ | _ | _ | _ | _ | k <;> first | rfl | omega
 
 theorem fld_setFld_ne {k k' i v : ℕ} (hk : k < 7) (hne : k' ≠ k) :

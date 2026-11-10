@@ -64,7 +64,8 @@ theorem extractMin_spec (C : Ctx) (hC : CtxOK C) (hLn : L.n = C.n) (hLD : L.D = 
   have R₄ : Rep L s₁ m₄ := (R₂.regs2 (r₁ := 2) (r₂ := 12) (by simp [Tmp]) (by simp [Tmp]) (by omega)
     (by omega) f₃).regs1 (r := 13) (by simp [Tmp]) (by omega) f₄
   have X₄ : Fixed L x m₄ := X₂.frame hH32 ((Frm.reg (L := L) (T := TE) (r := 12) (by simp [TE])
-    (by omega) f₃ (by simp [TE, TT, T29, T267])).trans (Frm.reg1 (by simp [TE, TT]) (by omega) f₄)).2
+    (by omega) f₃ (by simp [TE, TT, T29, T267])).trans (Frm.reg1 (by simp [TE,
+        TT]) (by omega) f₄)).2
   have hMR : MoveR L x m₄ (MoveInv M z (s₁.time + 65 * pot s₁ M + 95 * s₁.deg z) s) (s₁, z) m₄ := by
     refine ⟨R₄, X₄, Frm.refl, by rw [f₄ 30 (by omega), f₃ 30 (by omega) (by omega), h₂30], ?_, hI⟩
     rw [h₄, f₃ 8 (by omega) (by omega), q₂ 8 (by omega) (by simp [T267]), z₁, h₃]; rfl
@@ -93,8 +94,10 @@ theorem extractMin_spec (C : Ctx) (hC : CtxOK C) (hLn : L.n = C.n) (hLD : L.D = 
   refine Runs.seqs_cons (Runs.lessR (by omega) (by omega) (by omega) fun m₇ h₇ f₇ => ?_)
   have R₇ : Rep L s₂ m₇ := (hmv.rep.regs1 (r := 11) (by simp [Tmp]) (by omega) f₆).regs1 (r := 13)
     (by simp [Tmp]) (by omega) f₇
-  have X₇ : Fixed L x m₇ := hmv.fixed.frame hH32 (fun a ha _ => by rw [f₇ a (by omega), f₆ a (by omega)])
-  have hPR : PopR L x m₇ (PopInv C.D (M.erase z) (s₁.time + 65 * pot s₁ M + 95 * s₁.deg z) s₂) s₂ m₇ :=
+  have X₇ : Fixed L x m₇ := hmv.fixed.frame hH32 (fun a ha _ => by rw [f₇ a (by omega), f₆ a
+      (by omega)])
+  have hPR : PopR L x m₇ (PopInv C.D (M.erase z)
+      (s₁.time + 65 * pot s₁ M + 95 * s₁.deg z) s₂) s₂ m₇ :=
     ⟨R₇, X₇, Frm.refl, by rw [h₇, f₆ 8 (by omega), hmv.rep.zero, h₆11], hP⟩
   refine Runs.seqs_cons (Runs.mono (popLoop_spec C hLn hLD hD hrange hB hfu hPR)
     fun m₈ c₈ ⟨hpo, hk8, hdeg0⟩ => ?_)
@@ -132,14 +135,16 @@ theorem extractMin_spec (C : Ctx) (hC : CtxOK C) (hLn : L.n = C.n) (hLD : L.D = 
   -- Frames.
   have Fa : Frm L TE m m₄ := (Frm.reg1 (by simp [TE]) (by omega) f₁).trans
     ((F₂.mono fun a ha => Or.inl (Or.inl (Or.inl ha))).trans
-      ((Frm.reg (by simp [TE]) (by omega) f₃ (by simp [TE, TT, T29, T267])).trans
-        (Frm.reg1 (by simp [TE, TT]) (by omega) f₄)))
+      ((Frm.reg (by simp) (by omega) f₃ (by simp [T267])).trans
+        (Frm.reg1 (by simp) (by omega) f₄)))
   have Fb : Frm L TE m₄ m₈ := (hmv.frm.mono fun a ha => Or.inr (Or.inr (Or.inl ha))).trans
-    ((Frm.reg1 (by simp [TE, TT]) (by omega) f₆).trans ((Frm.reg1 (by simp [TE, TT]) (by omega) f₇).trans
+    ((Frm.reg1 (by simp [TT]) (by omega) f₆).trans ((Frm.reg1 (by simp [TT]) (by omega) f₇).trans
       (hpo.frm.mono fun a ha => Or.inr (Or.inl ha))))
   have Fc : Frm L TE m₈ m₁₃ := (Frm.reg1 (by simp [TE, TT, T29]) (by omega) f₉).trans
-    ((Frm.reg1 (by simp [TE, TT]) (by omega) f₁₀).trans ((Frm.reg1 (by simp [TE, TT]) (by omega) f₁₁).trans
-      ((htb.frm.mono fun a ha => Or.inl ha).trans (Frm.reg1 (by simp [TE, TT, T29, T267]) (by omega) f₁₃))))
+    ((Frm.reg1 (by simp [TE, TT]) (by omega) f₁₀).trans ((Frm.reg1 (by simp [TE, TT]) (by omega)
+        f₁₁).trans
+      ((htb.frm.mono fun a ha => Or.inl ha).trans (Frm.reg1 (by simp [TT, T29, T267]) (by omega)
+          f₁₃))))
   have Fall : Frm L TE m m₁₃ := Fa.trans (Fb.trans Fc)
   refine ⟨(htb.rep.regs1 (r := 2) (by simp [Tmp]) (by omega) f₁₃).same
       ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩, hF.frame hH32 Fall.2, Fall, ?_, ?_⟩

@@ -14,10 +14,16 @@ machine it was written on has, as the merged sorting proof did, so that is left 
   `toE`, which turns the input into it.
 - `InputCode.lean`: the statement's codes on the tape, and how they match the edge list.
 - `Algorithm.lean`: Dijkstra's algorithm with a Fibonacci heap, as a program.
-- `Model.lean`: the same algorithm as a plain Lean model.
-- `Heap/`: the Fibonacci heap on the model, and its degree bound.
-- `Dijkstra/`: correctness and cost of Dijkstra's algorithm on the model, over `WGraph`, a graph with
-  a weight on every pair of vertices. `dist_toE` ties it to the distance in `AcceptsDist`.
+- `Model.lean`: the same algorithm as a plain Lean model, with keys and weights in any type `R`
+  (`StW R`, `CtxW R`); `St` and `Ctx` are the natural-number instances the program refines.
+- `Heap/`: the Fibonacci heap on the model, and its degree bound, for keys in any linear order.
+- `Dijkstra/`: correctness and cost of Dijkstra's algorithm on the model, over `WGraphW R`, a graph
+  with a weight on every pair of vertices, for weights in a linear order with nonnegative addition
+  (`ℕ`, or the nonnegative reals). A settled key is the least weight of a walk from the source.
+  `finish_spec` gives the `ℕ∞` distance for natural weights, and `dist_toE` ties it to
+  `AcceptsDist`. `DijkstraInput.lean` runs the model on the statement's input with weights in `R`:
+  `distOut_valid` (the output is valid for any spec accepting least walk weights, `AcceptsDistW`)
+  and `finishW_time` (the model's steps).
 - `Run/`: the program runs as the model says.
 - `Machine/`: the commands, compiled to word RAM programs, and input and output.
 - `Codes.lean`, `IO.lean`, `Context.lean`: the edge-list input and output codes, and the model's

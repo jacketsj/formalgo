@@ -12,24 +12,29 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {s : St} {M L : Finset ℕ} {e v p x y : ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s : StW R} {M L : Finset ℕ} {e v p x y : ℕ}
 
 /-- The roots in the degree table. -/
-def tset (D : ℕ) (s : St) : Finset ℕ := ((Finset.range D).image s.tbl).erase 0
+def tset (D : ℕ) (s : StW R) : Finset ℕ := ((Finset.range D).image s.tbl).erase 0
 
 /-- Table entries are roots of the degree they sit at, below `D`. -/
-def TblInv (D : ℕ) (M : Finset ℕ) (s : St) : Prop :=
+def TblInv (D : ℕ) (M : Finset ℕ) (s : StW R) : Prop :=
   ∀ d, s.tbl d ≠ 0 → d < D ∧ s.tbl d ∈ M ∧ s.deg (s.tbl d) = d
 
+omit [LinearOrder R] in
 theorem mem_tset {D : ℕ} : v ∈ tset D s ↔ v ≠ 0 ∧ ∃ d < D, s.tbl d = v := by
   simp only [tset, Finset.mem_erase, Finset.mem_image, Finset.mem_range]
 
+omit [LinearOrder R] in
 theorem TblInv.eq_of_tbl {D : ℕ} (h : TblInv D M s) {d d' : ℕ} (hd : s.tbl d ≠ 0)
     (he : s.tbl d' = s.tbl d) : d' = d := by
   have h1 := (h d hd).2.2
   have h2 := (h d' (he ▸ hd)).2.2
   rw [he] at h2; omega
 
+omit [LinearOrder R] in
 theorem tset_setTbl_zero {D dx : ℕ} (h : TblInv D M s) (hy : s.tbl dx ≠ 0) :
     tset D (setTbl dx 0 s) = (tset D s).erase (s.tbl dx) := by
   ext w
@@ -45,6 +50,7 @@ theorem tset_setTbl_zero {D dx : ℕ} (h : TblInv D M s) (hy : s.tbl dx ≠ 0) :
     have hdx : d ≠ dx := by rintro rfl; exact hne hdw.symm
     exact ⟨hw, d, hd, by rw [update_of_ne hdx]; exact hdw⟩
 
+omit [LinearOrder R] in
 theorem tset_setTbl_new {D dx : ℕ} (h0 : s.tbl dx = 0) (hdx : dx < D) (hx : x ≠ 0) :
     tset D (setTbl dx x s) = insert x (tset D s) := by
   ext w
@@ -63,9 +69,11 @@ theorem Forest.setTbl (h : Forest s M e) (d k : ℕ) : Forest (setTbl d k s) M e
   h.congr rfl rfl rfl rfl (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl)
     (fun _ _ _ => rfl)
 
+omit [LinearOrder R] in
 theorem RootList.setTbl (h : RootList s M L) (d k : ℕ) : RootList (setTbl d k s) M L :=
   h.congr (fun _ _ => rfl) rfl rfl (fun _ _ _ => rfl)
 
+omit [LinearOrder R] in
 theorem marked_link (hy : s.par y = 0) : marked (St.link y x s) M = marked s M := by
   ext w
   simp only [marked, Finset.mem_filter, link_par, link_mark]
@@ -76,7 +84,7 @@ theorem marked_link (hy : s.par y = 0) : marked (St.link y x s) M = marked s M :
 /-! ### Linking through the table -/
 
 /-- The invariant of the links after a pop. -/
-structure LinkInv (D : ℕ) (M : Finset ℕ) (Q d₀ : ℕ) (s₀ : St) (a : St × ℕ × ℕ) : Prop where
+structure LinkInv (D : ℕ) (M : Finset ℕ) (Q d₀ : ℕ) (s₀ : StW R) (a : StW R × ℕ × ℕ) : Prop where
   forest : Forest a.1 M 0
   roots : RootList a.1 M (insert a.2.1 (tset D a.1))
   xM : a.2.1 ∈ M
@@ -88,7 +96,7 @@ structure LinkInv (D : ℕ) (M : Finset ℕ) (Q d₀ : ℕ) (s₀ : St) (a : St 
   cost : a.1.time + 65 * pot a.1 M + 40 * (tset D a.1).card + 40 ≤ Q
   keep : Keep M s₀ a.1
 
-theorem LinkInv.step {D Q d₀ : ℕ} {s₀ : St} {a : St × ℕ × ℕ} (h : LinkInv D M Q d₀ s₀ a)
+theorem LinkInv.step {D Q d₀ : ℕ} {s₀ : StW R} {a : StW R × ℕ × ℕ} (h : LinkInv D M Q d₀ s₀ a)
     (hc : linkCond a) :
     LinkInv D M Q d₀ s₀ (linkStep a) ∧ (tset D (linkStep a).1).card < (tset D a.1).card := by
   obtain ⟨s, x, dx⟩ := a
@@ -117,7 +125,10 @@ theorem LinkInv.step {D Q d₀ : ℕ} {s₀ : St} {a : St × ℕ × ℕ} (h : Li
   have hdeg : s₁.deg y' = s₁.deg x' := by
     change s.deg y' = s.deg x'; rw [hx', hy']; split_ifs <;> rw [hxd, hyd]
   have hkey : s₁.key x' ≤ s₁.key y' := by
-    change s.key x' ≤ s.key y'; rw [hx', hy']; split_ifs <;> omega
+    change s.key x' ≤ s.key y'; rw [hx', hy']
+    split_ifs with h
+    · exact h.le
+    · exact not_lt.1 h
   have hx'd : s₁.deg x' = dx := by
     change s.deg x' = dx; rw [hx']; split_ifs <;> [exact hyd; exact hxd]
   have hx'0 := ne_zero_of_mem hF hx'M
@@ -170,7 +181,7 @@ theorem LinkInv.step {D Q d₀ : ℕ} {s₀ : St} {a : St × ℕ × ℕ} (h : Li
     · change update s₁.deg x' _ w = s.deg w; rw [update_of_ne hwx]; rfl
     · change update s₁.mark y' 0 w = s.mark w; rw [update_of_ne hwy]; rfl
     · change update s₁.par y' x' w = s.par w; rw [update_of_ne hwy]; rfl
-  · show (tset D (tick 40 (St.link y' x' s₁))).card < (tset D s).card
+  · change (tset D (tick 40 (St.link y' x' s₁))).card < (tset D s).card
     rw [htl]; omega
 
 end Formalgo.Algorithms.ShortestPaths

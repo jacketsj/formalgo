@@ -10,16 +10,27 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St
 
-variable {s : St} {M L : Finset ℕ} {x y : ℕ}
+variable {R : Type*} [LinearOrder R]
 
+variable {s : StW R} {M L : Finset ℕ} {x y : ℕ}
+
+omit [LinearOrder R] in
 theorem link_par : (St.link y x s).par = update s.par y x := rfl
+omit [LinearOrder R] in
 theorem link_deg : (St.link y x s).deg = update s.deg x (s.deg x + 1) := rfl
+omit [LinearOrder R] in
 theorem link_pos : (St.link y x s).pos = update s.pos y (s.deg x) := rfl
+omit [LinearOrder R] in
 theorem link_ch : (St.link y x s).ch = update s.ch x (update (s.ch x) (s.deg x) y) := rfl
+omit [LinearOrder R] in
 theorem link_mark : (St.link y x s).mark = update s.mark y 0 := rfl
+omit [LinearOrder R] in
 theorem link_lt : (St.link y x s).lt = update s.lt y s.clock := rfl
+omit [LinearOrder R] in
 theorem link_clock : (St.link y x s).clock = s.clock + 1 := rfl
+omit [LinearOrder R] in
 theorem link_ht : (St.link y x s).ht = update s.ht x (max (s.ht x) (s.ht y + 1)) := rfl
+omit [LinearOrder R] in
 theorem link_key : (St.link y x s).key = s.key := rfl
 
 theorem Forest.link (h : Forest s M 0) (hx : x ∈ M) (hy : y ∈ M) (hxp : s.par x = 0)
@@ -142,6 +153,7 @@ theorem Forest.link (h : Forest s M 0) (hx : x ∈ M) (hy : y ∈ M) (hxp : s.pa
     · subst hwy; simp
     · rw [update_of_ne hwy]; exact h.mark w hw
 
+omit [LinearOrder R] in
 theorem RootList.link (h : RootList s M L) (hx0 : x ≠ 0) (hyL : y ∈ L) (hxy : x ≠ y) :
     RootList (St.link y x s) M (L.erase y) := by
   have hpar : ∀ w, w ≠ y → (St.link y x s).par w = s.par w := fun w hw => by

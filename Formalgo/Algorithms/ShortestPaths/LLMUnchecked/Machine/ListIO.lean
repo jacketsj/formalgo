@@ -17,7 +17,8 @@ open Function Cmd
 
 /-! ### Triples -/
 
-theorem getD_append_right' (a b : List ℕ) (i : ℕ) : (a ++ b).getD (a.length + i) 0 = b.getD i 0 := by
+theorem getD_append_right' (a b : List ℕ) (i : ℕ) :
+    (a ++ b).getD (a.length + i) 0 = b.getD i 0 := by
   simp [List.getD_eq_getElem?_getD, List.getElem?_append_right]
 
 theorem getD_append_left' (a b : List ℕ) {i : ℕ} (hi : i < a.length) :
@@ -36,7 +37,8 @@ theorem getD_cons3 (a b c : ℕ) (t : List ℕ) (i : ℕ) :
 
 theorem tripleNat_getD_cons (v : ℕ) (l : List ℕ) (k : ℕ) :
     (tripleNat (v :: l)).getD k 0 =
-      if k = 0 then 1 else if k = 1 then v else if k = 2 then 0 else (tripleNat l).getD (k - 3) 0 := by
+      if k = 0 then 1 else if k = 1 then v else if k = 2 then 0
+      else (tripleNat l).getD (k - 3) 0 := by
   rw [tripleNat_cons]
   rcases k with _ | _ | _ | k <;> simp [List.getD_eq_getElem?_getD]
 
@@ -135,16 +137,16 @@ theorem exec_listSetS {B n : ℕ} {m : Mem} (h4 : m 4 = n) (hB : 6 * n + 41 < B)
   have e := Exec.seq (B := B) (m := m) (.add (d := 0) (l := 4) (r := 4) (by omega) (by omega)
     (by omega) (by rw [h4]; omega))
     (.seq (.add (d := 0) (l := 0) (r := 4) (by omega) (by omega) (by omega)
-      (by simp [update_apply, h4]; omega))
+      (by simp [h4]; omega))
     (.seq (.add (d := 0) (l := 0) (r := 0) (by omega) (by omega) (by omega)
-      (by simp [update_apply, h4]; omega))
+      (by simp [h4]; omega))
     (.seq (.const (d := 2) (v := 41) (by omega) (by omega))
     (.seq (.add (d := 0) (l := 0) (r := 2) (by omega) (by omega) (by omega)
-      (by simp [update_apply, h4]; omega))
+      (by simp [h4]; omega))
     (.const (d := 2) (v := 0) (by omega) (by omega))))))
   refine ⟨_, e, ?_, ?_⟩
-  · simp [update_apply, h4]; omega
-  · intro a ha hb; simp [update_apply, ha, hb]
+  · simp [h4]; omega
+  · intro a ha hb; simp [ha, hb]
 
 /-! ### Loading the input into the array at `A` -/
 
@@ -173,6 +175,7 @@ theorem ListRegs.of_frame {S n A : ℕ} {m m' : Mem} (h : ListRegs S n A m)
     assumption
 
 set_option maxHeartbeats 1000000 in
+-- The proof steps through many memory updates at once.
 theorem exec_loadLoop {B S n A : ℕ} {m : Mem} {x : List ℕ} (hn : x.length = n)
     (hR : ListRegs S n A m) (hKS : nK ≤ S) (hA : A = S + nK) (hB : A + n + nK < B)
     (hx : ∀ j < n, vm S m (3 * j + 7) = x[j]!) (hxB : ∀ j < n, x[j]! < B)
@@ -277,6 +280,7 @@ def emitBody : Cmd := seqs [vwrite 12 3, add 12 12 3, add 13 9 11, load 14 13, v
 def emitLoop : Cmd := seq emitHead (loop 15 3 emitBody)
 
 set_option maxHeartbeats 1000000 in
+-- The proof steps through many memory updates at once.
 theorem exec_emitLoop {B S n A : ℕ} {m : Mem} {ys : List ℕ} (hn : ys.length = n)
     (hR : ListRegs S n A m) (hKS : nK ≤ S) (hA : A = S + nK) (hB : A + n + nK < B)
     (hys : ∀ j < n, vm S m (A + j) = ys[j]!) (hyB : ∀ j < n, ys[j]! < B)

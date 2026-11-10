@@ -11,28 +11,35 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {s s' : St} {M L : Finset ℕ} {e v p z : ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s s' : StW R} {M L : Finset ℕ} {e v p z : ℕ}
 
 /-- Keys, statuses, and nodes outside `M` are left alone. -/
-structure Keep (M : Finset ℕ) (s s' : St) : Prop where
+structure Keep (M : Finset ℕ) (s s' : StW R) : Prop where
   key : s'.key = s.key
   stat : s'.stat = s.stat
   out : ∀ w ∉ M, w ≠ 0 → s'.deg w = s.deg w ∧ s'.mark w = s.mark w ∧ s'.par w = s.par w
 
+omit [LinearOrder R] in
 theorem Keep.refl : Keep M s s := ⟨rfl, rfl, fun _ _ _ => ⟨rfl, rfl, rfl⟩⟩
 
-theorem Keep.trans {s'' : St} (h : Keep M s s') (h' : Keep M s' s'') : Keep M s s'' :=
+omit [LinearOrder R] in
+theorem Keep.trans {s'' : StW R} (h : Keep M s s') (h' : Keep M s' s'') : Keep M s s'' :=
   ⟨h'.key.trans h.key, h'.stat.trans h.stat, fun w hw h0 => by
     obtain ⟨a, b, c⟩ := h.out w hw h0; obtain ⟨a', b', c'⟩ := h'.out w hw h0
     exact ⟨a'.trans a, b'.trans b, c'.trans c⟩⟩
 
+omit [LinearOrder R] in
 theorem Keep.mono {M' : Finset ℕ} (h : Keep M' s s') (hM : M' ⊆ M) : Keep M s s' :=
   ⟨h.key, h.stat, fun w hw h0 => h.out w (fun hm => hw (hM hm)) h0⟩
 
+omit [LinearOrder R] in
 theorem Keep.tick (h : Keep M s s') (c : ℕ) : Keep M s (tick c s') := ⟨h.key, h.stat, h.out⟩
 
 /-! ### The potential under moves -/
 
+omit [LinearOrder R] in
 theorem marked_moveRoot : marked (moveRoot v p s) M ⊆ marked s M := by
   intro w hw
   simp only [marked, Finset.mem_filter, moveRoot_par, moveRoot_mark] at hw ⊢
@@ -41,10 +48,12 @@ theorem marked_moveRoot : marked (moveRoot v p s) M ⊆ marked s M := by
   · simp at h2
   · rw [update_of_ne hwv] at h2; exact ⟨h1, h2, h3⟩
 
+omit [LinearOrder R] in
 theorem pot_moveRoot (hp : p ≠ 0) : pot (moveRoot v p s) M ≤ pot s M + 1 := by
   have h1 := Finset.card_le_card (marked_moveRoot (v := v) (p := p) (s := s) (M := M))
   simp only [pot]; rw [moveRoot_deg _ _ _ hp, update_self]; omega
 
+omit [LinearOrder R] in
 theorem pot_erase_root (hz : s.par z = 0) : pot s (M.erase z) = pot s M := by
   have : marked s (M.erase z) = marked s M := by
     ext w; simp only [marked, Finset.mem_filter, Finset.mem_erase]
@@ -64,7 +73,8 @@ theorem detach_min (hH : HeapInv n s M) (hne : M.Nonempty) :
   obtain ⟨r1, _⟩ := hH.roots.root _ m1 m2 (Finset.notMem_empty _)
   have hlast := (hH.roots.list (s.deg 0 - 1) (by omega)).2.2.1
   refine ⟨hH.forest.detach_root hlast,
-    (by simpa using hH.roots.detach_root m1 m2 (Finset.notMem_empty _)), m2, ?_, rfl, rfl, rfl, rfl, fun w _ h0 => ⟨?_, rfl, rfl⟩⟩
+    (by simpa using hH.roots.detach_root m1 m2 (Finset.notMem_empty _)), m2, ?_, rfl, rfl, rfl, rfl,
+    fun w _ h0 => ⟨?_, rfl, rfl⟩⟩
   · have hm : marked (detach s.hmin 0 s) M = marked s M := rfl
     change update s.deg 0 (s.deg 0 - 1) 0 + 2 * (marked (detach s.hmin 0 s) M).card + 1 =
       s.deg 0 + 2 * (marked s M).card
@@ -73,22 +83,23 @@ theorem detach_min (hH : HeapInv n s M) (hne : M.Nonempty) :
 
 /-! ### Moving the children of the minimum -/
 
-theorem moveStep_fst (hz : z ≠ 0) (hpos : s.pos (s.ch z (s.deg z - 1)) = s.deg z - 1) :
+omit [LinearOrder R] in
+theorem moveStep_fst (_hz : z ≠ 0) (hpos : s.pos (s.ch z (s.deg z - 1)) = s.deg z - 1) :
     (moveStep (s, z)).1 = tick 30 (moveRoot (s.ch z (s.deg z - 1)) z s) := by
   have hX : update (s.ch z) (s.pos (s.ch z (s.deg z - 1))) (s.ch z (s.deg z - 1)) = s.ch z := by
     rw [hpos, update_eq_self]
   have e1 : (moveStep (s, z)).1 = tick 30 (attach (s.ch z (update s.deg z (s.deg z - 1) z)) 0
       { s with deg := update s.deg z (s.deg z - 1) }) := rfl
   rw [e1, update_self]
-  refine St.ext rfl rfl rfl ?_ rfl ?_ rfl ?_ rfl rfl rfl rfl rfl
-  · show update (update s.deg z (s.deg z - 1)) 0 (update s.deg z (s.deg z - 1) 0 + 1) =
+  refine StW.ext rfl rfl rfl ?_ rfl ?_ rfl ?_ rfl rfl rfl rfl rfl
+  · change update (update s.deg z (s.deg z - 1)) 0 (update s.deg z (s.deg z - 1) 0 + 1) =
       update (update s.deg z (s.deg z - 1)) 0 (update s.deg z (s.deg z - 1) 0 + 1)
     rfl
-  · show update s.pos (s.ch z (s.deg z - 1)) (update s.deg z (s.deg z - 1) 0) =
+  · change update s.pos (s.ch z (s.deg z - 1)) (update s.deg z (s.deg z - 1) 0) =
       update (update s.pos (s.ch z (s.deg z - 1)) (s.pos (s.ch z (s.deg z - 1))))
         (s.ch z (s.deg z - 1)) (update s.deg z (s.deg z - 1) 0)
     rw [update_eq_self]
-  · show update s.ch 0 (update (s.ch 0) (update s.deg z (s.deg z - 1) 0) (s.ch z (s.deg z - 1))) =
+  · change update s.ch 0 (update (s.ch 0) (update s.deg z (s.deg z - 1) 0) (s.ch z (s.deg z - 1))) =
       update (update s.ch z (update (s.ch z) (s.pos (s.ch z (s.deg z - 1)))
         (s.ch z (s.deg z - 1)))) 0
         (update (update s.ch z (update (s.ch z) (s.pos (s.ch z (s.deg z - 1)))
@@ -96,7 +107,7 @@ theorem moveStep_fst (hz : z ≠ 0) (hpos : s.pos (s.ch z (s.deg z - 1)) = s.deg
     rw [hX, update_eq_self]
 
 /-- The invariant of the moves. -/
-structure MoveInv (M : Finset ℕ) (z Q : ℕ) (s₀ : St) (a : St × ℕ) : Prop where
+structure MoveInv (M : Finset ℕ) (z Q : ℕ) (s₀ : StW R) (a : StW R × ℕ) : Prop where
   z_eq : a.2 = z
   zM : z ∈ M
   forest : Forest a.1 M 0
@@ -106,7 +117,8 @@ structure MoveInv (M : Finset ℕ) (z Q : ℕ) (s₀ : St) (a : St × ℕ) : Pro
   keep : Keep M s₀ a.1
   tbl : a.1.tbl = s₀.tbl
 
-theorem MoveInv.step {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : MoveInv M z Q s₀ a) (hc : moveCond a) :
+theorem MoveInv.step {Q : ℕ} {s₀ : StW R} {a : StW R × ℕ} (h : MoveInv M z Q s₀ a)
+    (hc : moveCond a) :
     MoveInv M z Q s₀ (moveStep a) ∧ (moveStep a).1.deg z < a.1.deg z := by
   obtain ⟨s, z'⟩ := a
   obtain ⟨hz, hzM, hF, hR, hzp, hQ, hk, ht⟩ := h
@@ -140,7 +152,7 @@ theorem MoveInv.step {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : MoveInv M z Q s�
     · change update s.par _ 0 w = s.par w; rw [update_of_ne hwc]
 
 /-- After the moves. -/
-theorem move_loop (C : Ctx) {Q : ℕ} {s₀ : St} {a : St × ℕ} (h : MoveInv M z Q s₀ a)
+theorem move_loop (C : CtxW R) {Q : ℕ} {s₀ : StW R} {a : StW R × ℕ} (h : MoveInv M z Q s₀ a)
     (hFu : a.1.deg z ≤ C.F) :
     MoveInv M z Q s₀ (whileF moveCond moveStep C.F a) ∧
       (whileF moveCond moveStep C.F a).1.deg z = 0 := by
