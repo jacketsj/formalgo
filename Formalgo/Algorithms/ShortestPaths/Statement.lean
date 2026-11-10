@@ -53,7 +53,7 @@ theorem singleSourceShortestPathsInEPlusVLogV_realRAM :
 
 /-- A TD word RAM with `<`, `+` and `−` finds all-pairs shortest paths in `O(V³)` steps
 (the Floyd–Warshall algorithm). -/
-theorem allPairsShortestPathsInV3 :
+theorem allPairsShortestPathsInVCubed :
     ∃ c, (tdWordRAM [.less, .add, .sub]).SolvableWithin (allPairsShortestPaths ℕ)
       fun ⟨V, _, _⟩ => c * V ^ 3 + c :=
   allPairs_wordRAM _ fun _ _ _ _ h => h
