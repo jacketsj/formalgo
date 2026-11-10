@@ -1,8 +1,8 @@
 # Formalgo (Formalized Algorithms)
 This library is for formalizing algorithmic results. Some examples of statements that have formalized in this library:
 
-- There exists an algorithm running on integer ram that solves sorting of n integers in $O(n log n)$ time.
-- There exists an algorithm running on (transdichotomous) word ram that solves the single-source shortest-path problem on n-vertex m-edge (connected, undirected) graphs in $O(m+nlog n)$ time.
+- There exists an algorithm running on integer ram that solves sorting of n integers in $O(n \log n)$ time.
+- There exists an algorithm running on (transdichotomous) word ram that solves the single-source shortest-path problem on n-vertex m-edge (connected, undirected) graphs in $O(m+n\log n)$ time.
 - There exists an algorithm running on real ram that solves the all-pairs shortest-path problem on n-vertex (connected, undirected) graphs in $O(n^3)$ time.
 
 These statements are written using thoroughly checked definitions of all these computational models.
