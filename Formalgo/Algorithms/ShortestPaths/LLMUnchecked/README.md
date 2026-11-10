@@ -7,9 +7,9 @@ machine it was written on has, as the merged sorting proof did, so that is left 
 
 - `Proof.lean`: the final theorem, `shortestPaths_wordRAM`, for any spec that accepts the
   shortest-path distances (`AcceptsDist`, stated with Mathlib's walks only, so the proof does not
-  import the statement). `../Statement.lean` applies it to `shortestPaths`. The program first
-  rewrites the input as an edge list (`Run/RunConv.lean`), runs the core on it, and puts `n` before
-  the core's output.
+  import the statement). `../Statement.lean` applies it to `singleSourceShortestPaths`. The
+  program first rewrites the input as an edge list (`Run/RunConv.lean`), runs the core on it, and
+  puts `n` before the core's output.
 - `EInput.lean`: `Input`, the statement's input type; the edge-list input the core reads; and
   `toE`, which turns the input into it.
 - `InputCode.lean`: the statement's codes on the tape, and how they match the edge list.

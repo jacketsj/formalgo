@@ -171,23 +171,34 @@ theorem len_spfN (x : Input) : (ncode (spfN x)).length = x.1 + 2 := by
   simp only [List.length_cons, List.length_map, length_spf]
   rfl
 
-/-- `spec` accepts, for a connected graph and a source vertex, the distances from the source. -/
+/-- `spec` accepts, for a connected graph and a source vertex, the weight of a lightest walk from
+the source to each vertex. -/
 def AcceptsDist (spec : IOSpec Input (Σ n, Fin n → ℕ)) : Prop :=
   ∀ n (G : SimpleGraph (Fin n)) (w : G.edgeSet → ℕ) (s : ℕ) (out : Σ n, Fin n → ℕ),
-    (G.Connected → ∀ h : s < n, out = ⟨n, fun v => ⨅ p : G.Walk ⟨s, h⟩ v,
-      (p.darts.map fun d => w ⟨d.edge, d.edge_mem⟩).sum⟩) → spec.valid ⟨n, G, w, s⟩ out
+    (G.Connected → ∀ h : s < n, ∃ f : Fin n → ℕ, out = ⟨n, f⟩ ∧ ∀ v,
+      IsLeast {(p.darts.map fun d => w ⟨d.edge, d.edge_mem⟩).sum | p : G.Walk ⟨s, h⟩ v} (f v)) →
+    spec.valid ⟨n, G, w, s⟩ out
+
+/-- Over a nonempty index, the infimum of natural numbers is their least value. -/
+theorem isLeast_iInf {ι : Sort*} [Nonempty ι] (f : ι → ℕ) : IsLeast (Set.range f) (⨅ i, f i) :=
+  ⟨csInf_mem (Set.range_nonempty f), fun _ ⟨i, hi⟩ => hi ▸ ciInf_le (OrderBot.bddBelow _) i⟩
 
 theorem spfN_valid {spec : IOSpec Input (Σ n, Fin n → ℕ)} (hspec : AcceptsDist spec) (x : Input) :
     spec.valid x (spfN x) := by
   obtain ⟨n, G, w, s⟩ := x
-  refine hspec n G w s _ fun _ h => congrArg (Sigma.mk n) (funext fun v => ?_)
-  have hs : (toE ⟨n, G, w, s⟩).source < (toE ⟨n, G, w, s⟩).wg.n := h
-  change (spo (toE ⟨n, G, w, s⟩)).getD v 0 = _
-  simp only [spo, spf, dif_pos hs]
-  rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_ofFn]
-  rw [dif_pos (show (v : ℕ) < (toE ⟨n, G, w, s⟩).wg.n from v.isLt), Option.map_some,
-    Option.getD_some]
-  exact dist_toE ⟨n, G, w, s⟩ _ _
+  refine hspec n G w s _ fun hG h => ⟨(spfN ⟨n, G, w, s⟩).2, rfl, fun v => ?_⟩
+  haveI : Nonempty (G.Walk ⟨s, h⟩ v) := hG.preconnected _ _
+  have hv : (spfN ⟨n, G, w, s⟩).2 v =
+      ⨅ p : G.Walk ⟨s, h⟩ v, (p.darts.map fun d => w ⟨d.edge, d.edge_mem⟩).sum := by
+    have hs : (toE ⟨n, G, w, s⟩).source < (toE ⟨n, G, w, s⟩).wg.n := h
+    change (spo (toE ⟨n, G, w, s⟩)).getD v 0 = _
+    simp only [spo, spf, dif_pos hs]
+    rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_ofFn]
+    rw [dif_pos (show (v : ℕ) < (toE ⟨n, G, w, s⟩).wg.n from v.isLt), Option.map_some,
+      Option.getD_some]
+    exact dist_toE ⟨n, G, w, s⟩ _ _
+  rw [hv]
+  exact isLeast_iInf _
 
 /-! ### The program -/
 
