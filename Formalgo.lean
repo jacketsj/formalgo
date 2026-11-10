@@ -17,3 +17,4 @@ import Formalgo.Core.Code.Graph
 import Formalgo.Algorithms.Sorting.Statement
 import Formalgo.Algorithms.Sorting.Proof
 import Formalgo.Algorithms.ShortestPaths.Statement
+import Formalgo.Complexity.Sorting.Statement
