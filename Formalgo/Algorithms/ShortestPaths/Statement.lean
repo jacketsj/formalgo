@@ -1,6 +1,7 @@
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.Proof
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.RealRun.RFinal
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.AllPairs.Proof
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.AllPairs.RealProof
 
 /-!
 # Single-source shortest paths
@@ -57,5 +58,12 @@ theorem allPairsShortestPathsInVCubed :
     ∃ c, (tdWordRAM [.less, .add, .sub]).SolvableWithin (allPairsShortestPaths ℕ)
       fun ⟨V, _, _⟩ => c * V ^ 3 + c :=
   allPairs_wordRAM _ fun _ _ _ _ h => h
+
+/-- A real RAM with `<`, `+` and `−` finds all-pairs shortest paths with nonnegative real weights
+in `O(V³)` steps (the Floyd–Warshall algorithm). -/
+theorem allPairsShortestPathsInVCubed_realRAM :
+    ∃ c, RealRAM.withAddSub.semantics.SolvableWithin (allPairsShortestPaths ℝ≥0)
+      fun ⟨V, _, _⟩ => c * V ^ 3 + c :=
+  allPairs_realRAM _ fun _ _ _ _ h => h
 
 end Formalgo.Algorithms.ShortestPaths
