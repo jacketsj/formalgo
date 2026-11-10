@@ -150,6 +150,7 @@ theorem main_run (hC : CtxOK C) (hA : AdjOK C G W) (hLn : L.n = C.n) (hLD : L.D 
     · rw [if_pos h]; exact ⟨fun _ => by omega, fun _ => rfl⟩
     · rw [if_neg h]; exact ⟨fun e => by omega, fun e => by omega⟩
   · refine Runs.mono (mainBody_run hC hA hLn hLD hadj hR'.inv hc hKB hB hR'.rep hR'.fix)
-      fun m₁ k ⟨R₁, X₁, F₁, g₁, hk⟩ => ⟨⟨(hR'.inv.step hC hA hc).1, R₁, X₁, hR'.frm.trans F₁, g₁⟩, hk⟩
+      fun m₁ k ⟨R₁, X₁, F₁, g₁, hk⟩ => ⟨⟨(hR'.inv.step hC hA hc).1, R₁, X₁, hR'.frm.trans F₁, g₁⟩,
+          hk⟩
 
 end Formalgo.Algorithms.ShortestPaths

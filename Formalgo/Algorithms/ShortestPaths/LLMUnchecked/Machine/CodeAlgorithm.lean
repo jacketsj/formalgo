@@ -60,13 +60,16 @@ def codeProgram (setS lenC core : Cmd) : Cmd := harness nK setS (codeBody lenC c
 theorem getElem!_eq_getElem' {l : List ℕ} {j : ℕ} (hj : j < l.length) : l[j]! = l[j] := by
   simp [hj]
 
+omit [(w : ℕ) → Code I (BitVec w)] in
 theorem ncode_input' (w : ℕ) (x : I) : ncode (w, x) = w :: ncode x := by
   rw [ncode_prod, ncode_nat]; rfl
 
+omit [(w : ℕ) → Code I (BitVec w)] in
 theorem initMem_code (w : ℕ) (x : I) (a : ℕ) :
     initMem w x a = (tripleNat (w :: ncode x)).getD a 0 := by
   simp [initMem, ncode_input']
 
+omit [(w : ℕ) → Code I (BitVec w)] in
 theorem initMem_code_elem {w : ℕ} {x : I} {j : ℕ} (hj : j < (ncode x).length) :
     initMem w x (3 * j + 4) = (ncode x)[j]! := by
   have := tripleNat_getD_mul_one (w :: ncode x) (j + 1)
@@ -74,15 +77,17 @@ theorem initMem_code_elem {w : ℕ} {x : I} {j : ℕ} (hj : j < (ncode x).length
   rw [initMem_code, this]
   simp [hj]
 
+omit [(w : ℕ) → Code I (BitVec w)] in
 theorem initMem_code_high {w : ℕ} {x : I} {a : ℕ} (ha : 3 * ((ncode x).length + 1) ≤ a) :
     initMem w x a = 0 := by
   rw [initMem_code, tripleNat_getD_of_le _ (by simpa using ha)]
 
-set_option maxHeartbeats 1000000 in
+omit [(w : ℕ) → Code I (BitVec w)] [(w : ℕ) → Code O (BitVec w)] in
 theorem codeBody_runs {lenC core : Cmd} {f : I → O} {t need : I → ℕ}
     (hcore : CodeSpec core f t need) (hlen : LenSpec lenC f) {B S w : ℕ} {x : I}
     (hNS : 3 * ((ncode x).length + 1) + 3 * (ncode (f x)).length + nK ≤ S)
-    (hneed : (ncode x).length + nK ≤ need x) (hB : S + nK + need x < B) (hxB : ∀ v ∈ ncode x, v < B) {m : Mem} (h1 : m rS = S)
+    (hneed : (ncode x).length + nK ≤ need x) (hB : S + nK + need x < B) (hxB : ∀ v ∈ ncode x,
+        v < B) {m : Mem} (h1 : m rS = S)
     (hvm : ∀ a, vm S m a = initMem w x a) (hreg : ∀ r, 3 ≤ r → r < nK → m r = initMem w x r) :
     Runs B (codeBody lenC core) m fun m' k => m' rS = S ∧
       (∀ a < S, a ≠ 0 → a ≠ 2 →
@@ -140,7 +145,6 @@ theorem codeBody_runs {lenC core : Cmd} {f : I → O} {t need : I → ℕ}
       rw [hfr₉ a (.inr (by omega)), hfr₈ a (by omega), hfr₇ a (.inl (by omega)), hvm₆, hvm,
         initMem_code_high (by omega), tripleNat_getD_of_le _ (by simp; omega)]
 
-set_option maxHeartbeats 1000000 in
 /-- A code program for a core computing `f` outputs `f x`. -/
 theorem code_outputs {setS lenC core : Cmd} {f : I → O} {t need Sf : I → ℕ}
     (hcore : CodeSpec core f t need) (hlen : LenSpec lenC f) (hset : SetSSpec setS Sf)
@@ -202,7 +206,7 @@ theorem code_outputs {setS lenC core : Cmd} {f : I → O} {t need Sf : I → ℕ
 def lenScan : Cmd := seqs [const 4 0, const 12 3, const 13 3, vread 14 12,
   loop 14 3 (seqs [add 4 4 3, add 12 12 13, vread 14 12])]
 
-set_option maxHeartbeats 1000000 in
+omit [(w : ℕ) → Code I (BitVec w)] [Code O ℕ] [(w : ℕ) → Code O (BitVec w)] in
 theorem lenScan_spec (f : I → O) : LenSpec lenScan f := by
   intro B S w m x hKS hB hS hR _ hvm
   have hflag : ∀ j, j ≤ (ncode x).length →
@@ -279,7 +283,7 @@ theorem lenScan_spec (f : I → O) : LenSpec lenScan f := by
 def setScan : Cmd := seq (const 0 3) (seq (load 2 0) (seq (loop 2 3 (seq (const 2 3)
   (seq (add 0 0 2) (load 2 0)))) (seq (add 0 0 0) (seq (const 2 64) (add 0 0 2)))))
 
-set_option maxHeartbeats 1000000 in
+omit [(w : ℕ) → Code I (BitVec w)] in
 theorem setScan_spec : SetSSpec (I := I) setScan fun x => 6 * (ncode x).length + 70 := by
   intro B w x hne hB
   beta_reduce at hB ⊢

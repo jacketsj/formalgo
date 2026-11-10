@@ -234,7 +234,8 @@ theorem decKey_run (C : Ctx) {M : Finset ℕ} {v nk : ℕ} {s : St} (hR : Rep L 
       (by rw [h₂15]; simp [Lay.bnd]; omega) (by omega) (by omega) (by omega) hB)
       fun m₃ c₃ ⟨h₃, f₃, hc₃⟩ => ?_)
     rw [h₂15] at h₃
-    have R₃ := R₂.regs2 (r₁ := 2) (r₂ := 17) (by simp [Tmp]) (by simp [Tmp]) (by omega) (by omega) f₃
+    have R₃ := R₂.regs2 (r₁ := 2) (r₂ := 17) (by simp [Tmp]) (by simp [Tmp]) (by omega) (by omega)
+      f₃
     refine Runs.seqs_cons (Runs.lessR (by omega) (by omega) (by omega) fun m₄ h₄ f₄ => ?_)
     have R₄ := R₃.regs1 (r := 17) (by simp [Tmp]) (by omega) f₄
     have h₄17 : m₄ 17 = if nk < s.key (s.par v) then 1 else 0 := by

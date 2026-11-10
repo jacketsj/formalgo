@@ -52,7 +52,8 @@ theorem cbBody_spec {m₀ : Mem} {v : ℕ} (h : CbR L m₀ v m) (h1 : 1 ≤ v) (
     rw [hcb, show v + 1 - 1 = v - 1 + 1 by omega, Nat.succ_mul]; omega
   have hvn : v * (L.D + 1) ≤ L.n * (L.D + 1) := Nat.mul_le_mul_right _ hv
   have facts : L.cb v + (L.D + 1) < B ∧ (∀ {r}, r < 32 → r < B) ∧ H8 L + v < B ∧ v + 1 < B ∧
-      32 ≤ H8 L + v ∧ v < L.R ∧ (∀ {a}, L.Dyn a → a ≠ H8 L + v) ∧ (∀ {a}, a < 32 → a ≠ H8 L + v) := by
+      32 ≤ H8 L + v ∧ v < L.R ∧ (∀ {a}, L.Dyn a → a ≠ H8 L + v) ∧ (∀ {a},
+          a < 32 → a ≠ H8 L + v) := by
     have H32 := hP.H32
     have ht := top_ge (L := L)
     have hCH := CH_ge (L := L)

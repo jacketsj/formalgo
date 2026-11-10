@@ -303,7 +303,8 @@ theorem emitAll_nbr {n : ℕ} (G : SimpleGraph (Fin n)) :
   congr 1
   exact List.filter_congr fun w _ => by simp
 
-theorem length_pairs (l : List (ℕ × ℕ)) : (l.flatMap fun p => [p.1, p.2]).length = 2 * l.length := by
+theorem length_pairs (l : List (ℕ × ℕ)) : (l.flatMap fun p => [p.1,
+    p.2]).length = 2 * l.length := by
   induction l with
   | nil => rfl
   | cons p l ih => simp [List.flatMap_cons, ih]; ring

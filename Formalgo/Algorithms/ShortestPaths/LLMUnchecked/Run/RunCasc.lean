@@ -50,7 +50,8 @@ theorem cascCond_spec (hR : Rep L σ m) {p : ℕ} (h15 : m 15 = p) (hp : p ≤ L
       f₁ 3 (by omega) (by omega), hR.one]; split_ifs <;> omega) fun m₅ h₅ f₅ => ?_)
   refine Runs.seqs_nilR (by omega) fun m₆ h₆ f₆ => ?_
   refine ⟨(R₃.regs1 (r := 17) (by simp [Tmp]) (by omega) f₄ |>.regs1 (r := 17) (by simp [Tmp])
-    (by omega) f₅ |>.regs1 (r := 2) (by simp [Tmp]) (by omega) f₆), ?_, fun a a2 a11 a17 => ?_, by omega⟩
+    (by omega) f₅ |>.regs1 (r := 2) (by simp [Tmp]) (by omega) f₆), ?_,
+    fun a a2 a11 a17 => ?_, by omega⟩
   · rw [f₆ 17 (by omega), h₅, h₄17, f₄ 3 (by omega), f₃ 3 (by omega) (by omega), f₂ 3 (by omega),
       f₁ 3 (by omega) (by omega), hR.one]; rfl
   · rw [f₆ a a2, f₅ a a17, f₄ a a17, f₃ a a2 a11, f₂ a a17, f₁ a a2 a17]
@@ -132,13 +133,14 @@ theorem cascBody_spec {M : Finset ℕ} {Q : ℕ} {m₀ : Mem} (hB : L.top < B) {
       have := hFo.height p hpM hc'.1; rw [e] at this; omega
     change update s.mark p 0 (s.par p) ≤ 1
     rw [update_of_ne hgp]; exact hFo.mark _ hgM
-  refine Runs.seqs_cons (Runs.mono (cascCond_spec R₃ h₃15 hgn hgm hB) fun m₄ c₄ ⟨R₄, h₄, f₄, hc₄⟩ => ?_)
+  refine Runs.seqs_cons (Runs.mono (cascCond_spec R₃ h₃15 hgn hgm hB) fun m₄ c₄ ⟨R₄, h₄, f₄,
+      hc₄⟩ => ?_)
   refine Runs.seqs_nilR (by omega) fun m₅ h₅ f₅ => ?_
   have F₄ : Frm L TC m₃ m₄ := ⟨fun a _ hT => f₄ a (fun e => hT (by simp [TC, T267, e]))
     (fun e => hT (by simp [TC, e])) (fun e => hT (by simp [TC, e])),
     fun a ha _ => f₄ a (by omega) (by omega) (by omega)⟩
   have F₅ : Frm L TC m m₅ := (Frm.reg (by simp [TC]) (by omega) f₁ (by simp [TC, T267])).trans
-    ((F₂.mono fun a ha => Or.inl ha).trans ((Frm.reg1 (by simp [TC]) (by omega) f₃).trans
+    ((F₂.mono fun a ha => Or.inl ha).trans ((Frm.reg1 (by simp) (by omega) f₃).trans
       (F₄.trans (Frm.reg1 (by simp [TC, T267]) (by omega) f₅))))
   refine ⟨⟨(R₄.regs1 (r := 2) (by simp [Tmp]) (by omega) f₅).same
       ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩, hF.frame hH F₅.2, hfr.trans F₅,

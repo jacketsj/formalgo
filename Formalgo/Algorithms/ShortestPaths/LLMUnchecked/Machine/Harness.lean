@@ -65,23 +65,23 @@ theorem exec_saveOne {B S j : ℕ} {m : Mem} (h0 : m 0 = S) (hj2 : j ≠ 2) (hjS
       ∀ a, a ≠ 2 → a ≠ S + j → m' a = m a := by
   have h2B : 2 < B := by omega
   have e := Exec.seq (B := B) (m := m) (.const (d := 2) (v := j) h2B (by omega))
-    (.seq (.add (d := 2) (l := 0) (r := 2) h2B (by omega) h2B (by simp [update_apply, h0]; omega))
+    (.seq (.add (d := 2) (l := 0) (r := 2) h2B (by omega) h2B (by simp [h0]; omega))
       (.seq (.store (p := 2) (s := j) h2B (by omega)) (.const (d := 2) (v := 0) h2B (by omega))))
   refine ⟨_, e, ?_, ?_, ?_⟩
   · simp [update_apply, h0, hj2]; omega
   · simp
-  · intro a ha hb; simp [update_apply, h0, ha, hb, hj2]
+  · intro a ha hb; simp [h0, ha, hb, hj2]
 
-theorem exec_restoreOne {B S j : ℕ} {m : Mem} (h0 : m 0 = S) (hj2 : j ≠ 2) (hj0 : j ≠ 0)
+theorem exec_restoreOne {B S j : ℕ} {m : Mem} (h0 : m 0 = S) (hj2 : j ≠ 2)
     (hjS : j < S) (h3 : 3 ≤ S) (hB : S + j < B) :
     ∃ m', Exec B (restoreOne j) m 4 m' ∧ m' j = m (S + j) ∧ m' 2 = 0 ∧
       ∀ a, a ≠ 2 → a ≠ j → m' a = m a := by
   have h2B : 2 < B := by omega
   have e := Exec.seq (B := B) (m := m) (.const (d := 2) (v := j) h2B (by omega))
-    (.seq (.add (d := 2) (l := 0) (r := 2) h2B (by omega) h2B (by simp [update_apply, h0]; omega))
+    (.seq (.add (d := 2) (l := 0) (r := 2) h2B (by omega) h2B (by simp [h0]; omega))
       (.seq (.load (d := j) (p := 2) (by omega) h2B) (.const (d := 2) (v := 0) h2B (by omega))))
   refine ⟨_, e, ?_, ?_, ?_⟩
-  · simp [update_apply, h0, hj2, show S + j ≠ 2 by omega]
+  · simp [h0, hj2, show S + j ≠ 2 by omega]
   · simp
   · intro a ha hb; simp [update_apply, h0, ha, hb]
 
@@ -93,8 +93,8 @@ theorem exec_saveAll {B S : ℕ} (js : List ℕ) (hnd : js.Nodup) {m : Mem} (h0 
       ∀ a, a ≠ 2 → (∀ j ∈ js, a ≠ S + j) → m' a = m a := by
   induction js generalizing m with
   | nil =>
-    exact ⟨_, exec_seqs_nil h2B, by simp [update_apply, h0], by simp, by simp,
-      fun a ha _ => by simp [update_apply, ha]⟩
+    exact ⟨_, exec_seqs_nil h2B, by simp [h0], by simp, by simp,
+      fun a ha _ => by simp [ha]⟩
   | cons j js ih =>
     obtain ⟨hj0, hj2, hjS⟩ := hjs j (by simp)
     obtain ⟨m₁, h₁, hm₁j, hm₁2, hm₁⟩ := exec_saveOne (B := B) h0 hj2 hjS h3 (hB j (by simp))
@@ -125,11 +125,11 @@ theorem exec_restoreAll {B S : ℕ} (js : List ℕ) {m : Mem} (h0 : m 0 = S)
       ∀ a, a ≠ 2 → a ∉ js → m' a = m a := by
   induction js generalizing m with
   | nil =>
-    exact ⟨_, exec_seqs_nil h2B, by simp [update_apply, h0], by simp, by simp,
-      fun a ha _ => by simp [update_apply, ha]⟩
+    exact ⟨_, exec_seqs_nil h2B, by simp [h0], by simp, by simp,
+      fun a ha _ => by simp [ha]⟩
   | cons j js ih =>
     obtain ⟨hj0, hj2, hjS⟩ := hjs j (by simp)
-    obtain ⟨m₁, h₁, hm₁j, hm₁2, hm₁⟩ := exec_restoreOne (B := B) h0 hj2 hj0 hjS h3 (hB j (by simp))
+    obtain ⟨m₁, h₁, hm₁j, hm₁2, hm₁⟩ := exec_restoreOne (B := B) h0 hj2 hjS h3 (hB j (by simp))
     have h0₁ : m₁ 0 = S := by rw [hm₁ 0 (by omega) (by omega), h0]
     obtain ⟨m₂, h₂, h0₂, h2₂, hreg, hrest⟩ := ih h0₁ (fun j hj => hjs j (by simp [hj]))
       (fun j hj => hB j (by simp [hj]))

@@ -34,7 +34,8 @@ theorem LstB.toLst {P : ℕ} (hP : P ≤ L.CH) :
 /-- The heads of the adjacency lists. -/
 def H7 (L : Lay) : ℕ := L.H + 7 * L.R
 
-/-- Add a half-edge from `M[ra]` to `M[rb]` of weight `M[14]` at `M[13]`, at the front of its list. -/
+/-- Add a half-edge from `M[ra]` to `M[rb]` of weight `M[14]` at `M[13]`, at the front of its
+list. -/
 theorem half_spec (tail : List Cmd) {ra rb p a : ℕ} (hP : Pre L m) (h13 : m 13 = p)
     (hra : m ra = a) (ha : a ≤ L.n) (hra32 : ra < 32) (hrb32 : rb < 32) (ra2 : ra ≠ 2)
     (ra15 : ra ≠ 15) (rb2 : rb ≠ 2) (rb15 : rb ≠ 15) (hp : L.HE ≤ p)
@@ -43,7 +44,8 @@ theorem half_spec (tail : List Cmd) {ra rb p a : ℕ} (hP : Pre L m) (h13 : m 13
       m' (H7 L + a) = p →
       (∀ x, x ≠ 2 → x ≠ 13 → x ≠ 15 → x ≠ p → x ≠ p + 1 → x ≠ p + 2 → x ≠ H7 L + a → m' x = m x) →
       Runs B (seqs tail) m' fun m'' k => Q m'' (k + 10)) :
-    Runs B (seqs (rd 15 7 ra :: store 13 15 :: add 2 13 3 :: store 2 rb :: add 2 2 3 :: store 2 14 ::
+    Runs B (seqs
+        (rd 15 7 ra :: store 13 15 :: add 2 13 3 :: store 2 rb :: add 2 2 3 :: store 2 14 ::
       wr 7 ra 13 :: add 13 13 16 :: tail)) m Q := by
   have h25 : m 25 = H7 L := hP.base 7 (by omega)
   have o3 : m 3 = 1 := hP.one
@@ -284,7 +286,8 @@ theorem buildBody_spec {u v w P p q Z : ℕ} {H : List (ℕ × ℕ × ℕ)} (hP 
     (by decide) hHE hP3 hB fun m₇ a13 a0 a1 a2 a3 af => ?_
   rw [v12] at a1
   rw [g₆] at a2
-  have o₇ : ∀ {x}, (L.Dyn x ∨ x < L.H) → x ≠ 2 → x ≠ 13 → x ≠ 15 → m₇ x = m₆ x := fun hx h2 h13' h15 => by
+  have o₇ : ∀ {x}, (L.Dyn x ∨ x < L.H) → x ≠ 2 → x ≠ 13 → x ≠ 15 → m₇ x = m₆ x :=
+      fun hx h2 h13' h15 => by
     obtain ⟨c1, c2, c3, c4⟩ := off_cells hHE hP3 hu hx
     exact af _ h2 h13' h15 c1 c2 c3 c4
   have lowH : ∀ {x}, x < 32 → (L.Dyn x ∨ x < L.H) := fun h => .inr (by omega)
@@ -308,7 +311,8 @@ theorem buildBody_spec {u v w P p q Z : ℕ} {H : List (ℕ × ℕ × ℕ)} (hP 
     (by decide) hHE3 hP33 hB fun m₈ b13 b0 b1 b2 b3 bf => ?_
   rw [w11] at b1
   rw [w14] at b2
-  have o₈ : ∀ {x}, (L.Dyn x ∨ x < L.H) → x ≠ 2 → x ≠ 13 → x ≠ 15 → m₈ x = m₇ x := fun hx h2 h13' h15 => by
+  have o₈ : ∀ {x}, (L.Dyn x ∨ x < L.H) → x ≠ 2 → x ≠ 13 → x ≠ 15 → m₈ x = m₇ x :=
+      fun hx h2 h13' h15 => by
     obtain ⟨c1, c2, c3, c4⟩ := off_cells hHE3 hP33 hv hx
     exact bf _ h2 h13' h15 c1 c2 c3 c4
   have P₈ : Pre L m₈ := P₇.keep (fun x hx hT => o₈ (lowH hx) (fun e => hT (by simp [BT, e]))

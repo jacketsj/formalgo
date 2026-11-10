@@ -39,9 +39,8 @@ theorem lift_toWord {W w : ℕ} (h : W ≤ w) {i : NInstr} (hi : ∀ n ∈ i.num
   cases i with
   | extension e =>
     cases e <;> simp_all [WordRAM.liftInstruction, NInstr.toWord, NInstr.nums, RAM.Instruction.map,
-      RAM.Arithmetic.map, setWidth'_ofNat h]
-  | _ => simp_all [WordRAM.liftInstruction, NInstr.toWord, NInstr.nums, RAM.Instruction.map,
-      RAM.Arithmetic.map, setWidth'_ofNat h]
+      RAM.Arithmetic.map]
+  | _ => simp_all [WordRAM.liftInstruction, NInstr.toWord, NInstr.nums, RAM.Instruction.map]
 
 theorem lift_linesProgram {W w : ℕ} (h : W ≤ w) {lines : List Line} (hl : 0 < lines.length)
     (hsmall : Small W lines) :
@@ -90,7 +89,7 @@ def cmdAlgorithm (Input Output : Type*) (c : Cmd) (W scale : ℕ) :
 def codeMax (l : List ℕ) : ℕ := l.foldr max l.length
 
 theorem le_foldr_max_init (l : List ℕ) (a : ℕ) : a ≤ l.foldr max a := by
-  induction l <;> simp_all [le_max_of_le_right]
+  induction l <;> simp_all
 
 theorem le_foldr_max {l : List ℕ} {a v : ℕ} (hv : v ∈ l) : v ≤ l.foldr max a := by
   induction l with
@@ -183,20 +182,20 @@ theorem outputs_of_exec (c : Cmd) {W scale : ℕ} (hsmall : Small W c.lines) (x 
     (fun i hi => by simp [Cmd.lines, List.getElem?_append_left (by rwa [Cmd.length_compile] at hi)])
     (by simp [Cmd.length_lines]) hT₀ (pc := ⟨0, hlpos⟩) rfl
   have hhalt := run_halt (hl := hlpos) (pc := ⟨0 + c.size, by simp [Cmd.length_lines]⟩)
-    (by simp [Cmd.lines, List.getElem?_append_right, Cmd.length_compile]) T'
+    (by simp [Cmd.lines, Cmd.length_compile]) T'
   have hfull : (linesProgram w c.lines hlpos).run (sem w) (k + 1) ⟨⟨0, hlpos⟩, T₀⟩ =
       .halted ⟨⟨0 + c.size, by simp [Cmd.length_lines]⟩, T'⟩ := by
     rw [run_add_of_running hrun, hhalt]
   have hstatus : (Runnable.run A (tdWordRAM ops)).status x (k + 1) =
       .halted ⟨w, ⟨⟨0 + c.size, by simp [Cmd.length_lines]⟩, T'⟩⟩ := by
-    show Status.map _ ((Runnable.run (A.atWordSize (tdWordRAM ops) w le_sup_left)
+    change Status.map _ ((Runnable.run (A.atWordSize (tdWordRAM ops) w le_sup_left)
       ((tdWordRAM ops).semantics w)).status (w, x) (k + 1)) = _
     simp only [Runnable.run, hprog]
     change Status.map _ ((linesProgram w c.lines hlpos).run (sem w) (k + 1) ⟨⟨0, hlpos⟩, T₀⟩) = _
     rw [hfull]; rfl
   refine ⟨⟨k + 1, _, hstatus, ?_⟩, ⟨_, hstatus⟩⟩
   -- The output.
-  show (TapeCoding.standard : TapeCoding (ℕ × Input) Output (BitVec w) (BitVec w)).decode T' = y
+  change (TapeCoding.standard : TapeCoding (ℕ × Input) Output (BitVec w) (BitVec w)).decode T' = y
   apply standard_decode hw hskip hyr hfwx hfity T'
   intro i hi
   have hi' : i < 3 * ((ncode (w, x)).length + (ncode y).length) := by
@@ -237,13 +236,14 @@ theorem status_halted_mono {PC I A V In Out : Type*} [Fintype PC]
     (hab : a ≤ b) : (Runnable.run alg sem).status x b = .halted st :=
   run_halted_of_le (program := alg.program) (semantics := sem) h hab
 
+omit [Code Output ℕ] in
 theorem haltsWithin_mono (c : Cmd) {W scale : ℕ} {x : Input} {a b : ℕ}
     (h : HaltsWithin (cmdAlgorithm Input Output c W scale) (tdWordRAM ops) x a) (hab : a ≤ b) :
     HaltsWithin (cmdAlgorithm Input Output c W scale) (tdWordRAM ops) x b := by
   obtain ⟨st, hst⟩ := h
   obtain ⟨st', hst'⟩ := map_halted hst
   refine ⟨⟨_, st'⟩, ?_⟩
-  show Status.map _ ((Runnable.run _ _).status _ b) = _
+  change Status.map _ ((Runnable.run _ _).status _ b) = _
   rw [status_halted_mono hst' hab]
   rfl
 

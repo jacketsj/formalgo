@@ -24,7 +24,8 @@ local macro "rsd" : tactic => `(tactic| first
 /-- The list `c` is in memory from `A`. -/
 def MemAt (m : Mem) (A : ℕ) (c : List ℕ) : Prop := ∀ j (h : j < c.length), m (A + j) = c[j]
 
-theorem MemAt.left {m : Mem} {A : ℕ} {c d : List ℕ} (h : MemAt m A (c ++ d)) : MemAt m A c := fun j hj => by
+theorem MemAt.left {m : Mem} {A : ℕ} {c d : List ℕ} (h : MemAt m A
+    (c ++ d)) : MemAt m A c := fun j hj => by
   have := h j (by simp; omega)
   rwa [List.getElem_append_left hj] at this
 
@@ -177,7 +178,6 @@ theorem length_pairsAbove_take (u : ℕ) (b : List ℕ) (j : ℕ) :
   conv_rhs => rw [← List.take_append_drop j b, pairsAbove_append]
   simp
 
-set_option maxHeartbeats 1000000 in
 /-- One neighbour. -/
 theorem inner_step {B S ℓ A n u p Q k : ℕ} {b W : List ℕ} {m₀ m : Mem}
     (hI : InnerInv S ℓ A n u p Q b W m₀ m k) (hk : k < b.length) (hKS : nK ≤ S)
@@ -238,7 +238,9 @@ theorem inner_step {B S ℓ A n u p Q k : ℕ} {b W : List ℕ} {m₀ m : Mem}
     rw [e5] at fr₆
     rstep
     refine Runs.addV hKS (by decide) (by omega) (by omega) (by omega)
-      (by rw [fr₆ 11 (by omega), fr₆ 3 (by omega), e5, f₅ 3 (by decide), fr₄ 3 (by omega), e3]; omega) ?_
+      (by
+        rw [fr₆ 11 (by omega), fr₆ 3 (by omega), e5, f₅ 3 (by decide), fr₄ 3 (by omega), e3]
+        omega) ?_
     intro m₇ g₇ f₇ v₇
     have e7 : m₇ 11 = Q + V.length + 2 := by
       rw [g₇, fr₆ 11 (by omega), e5, fr₆ 3 (by omega), f₅ 3 (by decide), fr₄ 3 (by omega), e3]
@@ -271,7 +273,8 @@ theorem inner_step {B S ℓ A n u p Q k : ℕ} {b W : List ℕ} {m₀ m : Mem}
     refine ⟨fun r hr h2 h11 => f₈ r h2, by rw [f₈ 11 (by decide), e11], hW₂.frame fun j hj =>
       f₈ _ (by omega), fun a ha hc => by rw [f₈ a (by omega), hfr₂ a ha hc], by omega⟩
   · rintro m₃ k₃ ⟨r₃, e11₃, hW₃, hfr₃, hk₃⟩
-    have e13 : m₃ 13 = p + 1 + k := by rw [r₃ 13 (by omega) (by omega) (by omega), f₂ 13 (by decide),
+    have e13 : m₃ 13 = p + 1 + k := by rw [r₃ 13 (by omega) (by omega) (by omega), f₂ 13
+        (by decide),
       f₁ 13 (by decide), h13]
     have e19 : m₃ 19 = k := by rw [r₃ 19 (by omega) (by omega) (by omega), f₂ 19 (by decide),
       f₁ 19 (by decide), h19]
@@ -307,7 +310,6 @@ theorem inner_step {B S ℓ A n u p Q k : ℕ} {b W : List ℕ} {m₀ m : Mem}
     · rw [hstep] at hc
       rw [f₁₂ a (by omega), f₁₁ a (by omega), f₁₀ a (by omega), f₉ a (by omega), hfr₃ a ha hc]
 
-set_option maxHeartbeats 1000000 in
 /-- One vertex: its degree and its neighbours. -/
 theorem block_run {B S ℓ A n u p Q : ℕ} {b W : List ℕ} {m₀ m : Mem} (hR : CvRegs S ℓ A n m)
     (h14 : m 14 = u) (h13 : m 13 = p) (h11 : m 11 = Q + W.length) (hW : MemAt m Q W)
@@ -424,7 +426,6 @@ def OuterInv (S ℓ A n : ℕ) (bs : List (List ℕ)) (m₀ m : Mem) (i : ℕ) :
     MemAt m (A + ℓ + 2) (emitAll (bs.take i) 0) ∧
     ∀ a, 32 ≤ a → (a < A + ℓ + 2 ∨ A + ℓ + 2 + (emitAll (bs.take i) 0).length ≤ a) → m a = m₀ a
 
-set_option maxHeartbeats 1000000 in
 theorem outer_run {B S ℓ A n : ℕ} {bs : List (List ℕ)} {t : List ℕ} {m₀ m : Mem}
     (hI : OuterInv S ℓ A n bs m₀ m 0) (hn : bs.length = n) (hKS : nK ≤ S) (hA : 32 ≤ A)
     (hM : MemAt m₀ A (n :: n :: (bs.flatMap blk ++ t)))
@@ -447,7 +448,8 @@ theorem outer_run {B S ℓ A n : ℕ} {bs : List (List ℕ)} {t : List ℕ} {m�
     rw [emitAll_take_succ hib] at hem
     rw [hsucc] at hpre
     simp only [List.length_append, blk, List.length_cons] at hpre
-    refine Runs.mono (block_run (B := B) (u := i) (Q := A + ℓ + 2) (b := bs[i]) hR h14 h13 h11 hW hfr
+    refine Runs.mono (block_run (B := B) (u := i) (Q := A + ℓ + 2)
+        (b := bs[i]) hR h14 h13 h11 hW hfr
       hKS (blk_mem hM hib) (by omega) (by omega) (by simp only [List.length_append] at hem ⊢; omega)
       hin hnB) ?_
     rintro m'' s' ⟨hR', e14, e17, e13, e11, hW', hfr', hs'⟩
@@ -471,7 +473,6 @@ def CopyInv (S ℓ A n P Q : ℕ) (t : List ℕ) (m₀ m : Mem) (k : ℕ) : Prop
     m 20 = (if k < t.length then 1 else 0) ∧ m 13 = P + k ∧ m 11 = Q + k ∧
     MemAt m Q (t.take k) ∧ ∀ a, 32 ≤ a → (a < Q ∨ Q + k ≤ a) → m a = m₀ a
 
-set_option maxHeartbeats 1000000 in
 /-- One cell. -/
 theorem copy_step {B S ℓ A n P Q k : ℕ} {t : List ℕ} {m₀ m : Mem}
     (hI : CopyInv S ℓ A n P Q t m₀ m k) (hk : k < t.length) (hKS : nK ≤ S)
@@ -538,7 +539,6 @@ theorem copy_step {B S ℓ A n P Q k : ℕ} {t : List ℕ} {m₀ m : Mem}
   · rw [F a (by omega) (by omega) (by omega) (by omega) (by omega), fr₂ a (by omega),
       f₁ a (by omega), hfr a ha (by omega)]
 
-set_option maxHeartbeats 1000000 in
 theorem copy_run {B S ℓ A n P Q : ℕ} {t : List ℕ} {m₀ m : Mem}
     (hI : CopyInv S ℓ A n P Q t m₀ m 0) (hKS : nK ≤ S) (ht : MemAt m₀ P t) (hP : 32 ≤ P)
     (hPQ : P + t.length ≤ Q) (hB : Q + t.length + 2 < B) :
@@ -564,6 +564,7 @@ theorem copy_run {B S ℓ A n P Q : ℕ} {t : List ℕ} {m₀ m : Mem}
 /-! ### The conversion -/
 
 set_option maxHeartbeats 4000000 in
+-- The proof steps through many memory updates at once.
 /-- `conv` writes the edge-list code `n, E, pairs, t` at `A + ℓ` and points registers `9` and `4`
 at it. -/
 theorem conv_run {B S ℓ A n E : ℕ} {bs : List (List ℕ)} {t' : List ℕ} {m : Mem}

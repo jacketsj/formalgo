@@ -209,7 +209,6 @@ def post : Cmd := seqs [.load 29 9, .add 4 4 29, .sub 9 9 4, .sub 10 10 3, .stor
 /-- Convert the input, run the core, and put `n` before its output. -/
 def coreN : Cmd := seqs [conv, Prog.core, post]
 
-set_option maxHeartbeats 1000000 in
 theorem post_run {B S ℓ' A' n O : ℕ} {m : Mem} (hR : CodeRegs S ℓ' A' m) (hKS : nK ≤ S)
     (h10 : m 10 = O) (h17 : m 17 = n + 1) (hn : m A' = n) (hA' : 32 ≤ A') (hℓ : ℓ' + n ≤ A')
     (hO : A' < O) (hB : O + n + 2 < B) :
@@ -276,7 +275,6 @@ noncomputable def needN (x : Input) : ℕ := (ncode x).length + needF (toE x)
 /-- The steps of `coreN`, up to the constant. -/
 noncomputable def timeN (x : Input) : ℕ := 20 * (ncode x).length + 60 + coreTime (toE x)
 
-set_option maxHeartbeats 4000000 in
 theorem coreN_spec : CodeSpec coreN spfN timeN needN := by
   intro B S A m x hR hKS hAS hneed hcB hcode hzero
   have hA : 32 ≤ A := by omega

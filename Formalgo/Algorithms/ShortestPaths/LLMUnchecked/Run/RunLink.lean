@@ -37,7 +37,8 @@ theorem Rep.same (h : Rep L σ m) (hs : Same σ σ') : Rep L σ' m := by
     · exact hs.tbl
     · rfl
   exact ⟨h.H32, h.base, h.n, h.D, by rw [hs.hmin]; exact h.hmin, h.one, h.zero, h.three,
-    fun k hk i hi => by rw [hf]; exact h.arr k hk i hi, fun v hv j hj => by rw [hs.ch]; exact h.ch v hv j hj⟩
+    fun k hk i hi => by rw [hf]; exact h.arr k hk i hi,
+    fun v hv j hj => by rw [hs.ch]; exact h.ch v hv j hj⟩
 
 theorem Same.link_tick (y x' : ℕ) (s : St) :
     Same (setFld 4 y 0 (St.attach y x' s)) (St.tick 40 (St.link y x' s)) :=
@@ -110,7 +111,8 @@ theorem linkBody_spec (C : Ctx) {M : Finset ℕ} {D Q d₀ : ℕ} {s₀ : St} {m
   set y := s.tbl dx with hy
   set x' := if s.key y < s.key xv then y else xv with hx'
   set y' := if s.key y < s.key xv then xv else y with hy'
-  have hls : linkStep (s, xv, dx) = (St.tick 40 (St.link y' x' (St.setTbl dx 0 s)), x', dx + 1) := rfl
+  have hls : linkStep (s, xv, dx) = (St.tick 40 (St.link y' x' (St.setTbl dx 0 s)), x',
+      dx + 1) := rfl
   rw [hls] at hstep ⊢
   unfold linkBody
   -- `tbl dx := 0`
@@ -118,7 +120,8 @@ theorem linkBody_spec (C : Ctx) {M : Finset ℕ} {D Q d₀ : ℕ} {s₀ : St} {m
     (by rw [h15]; simp [Lay.bnd]; omega) (by omega) (by omega) (by omega) hB)
     fun m₁ c₁ ⟨R₁, f₁, hc₁⟩ => ?_)
   rw [h15, hR.zero] at R₁
-  have hd1 : L.Dyn (L.H + 6 * L.R + m 15) := dyn_arr (k := 6) (by omega) (by rw [h15]; simp [Lay.bnd]; omega)
+  have hd1 : L.Dyn (L.H + 6 * L.R + m 15) :=
+    dyn_arr (k := 6) (by omega) (by rw [h15]; simp [Lay.bnd]; omega)
   have F₁ : Frm L TL m m₁ := Frm.dyn hd1 (by simp [TL, T267]) f₁ hH
   have g₁ : ∀ r, r < 32 → r ≠ 2 → m₁ r = m r := fun r hr h2 => f₁ r h2 (by omega)
   -- `M[11] := key y`, `M[31] := key x`, compared.
@@ -160,7 +163,8 @@ theorem linkBody_spec (C : Ctx) {M : Finset ℕ} {D Q d₀ : ℕ} {s₀ : St} {m
   have hx'0 : x' ≠ 0 := by
     have := (hM _ hxM).1; have := (hM _ hyM).1; rw [hx']; split_ifs <;> omega
   have hdx' : s.deg x' = dx := by rw [hx']; split_ifs <;> [exact hyd'; exact hxdeg]
-  refine Runs.seqs_cons (Runs.mono (attach_spec R₅ X₅ (rv := 12) (rp := 14) (by rw [h₅12]; exact hy'n)
+  refine Runs.seqs_cons (Runs.mono (attach_spec R₅ X₅ (rv := 12) (rp := 14)
+      (by rw [h₅12]; exact hy'n)
     (by rw [h₅14]; exact hx'n) (by
       rw [h₅14]; change s.deg x' < L.cap x'; rw [hdx']; simp [Lay.cap, hx'0]; omega)
     (by omega) (by omega) (by simp [T267]) (by simp [T267]) hB) fun m₆ c₆ ⟨R₆, X₆, F₆, hc₆⟩ => ?_)
@@ -184,10 +188,11 @@ theorem linkBody_spec (C : Ctx) {M : Finset ℕ} {D Q d₀ : ℕ} {s₀ : St} {m
       f₅ 15 (by omega) (by omega) (by omega) (by omega), e₄ 15 (by omega) (by omega) (by omega),
       g₁ 15 (by omega) (by omega), h15]
   refine Runs.seqs_cons (Runs.addR (by omega) (by omega) (by omega)
-    (by rw [h₇15, e₇ 3 (by omega) (by omega), R₆.one]; simp [Lay.bnd] at *; omega)
+    (by rw [h₇15, e₇ 3 (by omega) (by omega), R₆.one]; simp at *; omega)
     fun m₈ h₈ f₈ => ?_)
   have h₈15 : m₈ 15 = dx + 1 := by rw [h₈, h₇15, e₇ 3 (by omega) (by omega), R₆.one]
-  have R₈ := R₇.reg (T := TL) tT (Frm.reg1 (by simp [TL]) (by omega) f₈) (fun a ha => f₈ a (by omega))
+  have R₈ := R₇.reg (T := TL) tT (Frm.reg1 (by simp [TL]) (by omega) f₈) (fun a ha => f₈ a
+      (by omega))
   refine Runs.seqs_cons (Runs.mono (rd_spec R₈ (k := 6) (d := 12) (i := 15) (by omega)
     (by rw [h₈15]; simp [Lay.bnd]; omega) (by omega) (by omega) (by omega) hB)
     fun m₉ c₉ ⟨h₉, f₉, hc₉⟩ => ?_)
@@ -196,7 +201,8 @@ theorem linkBody_spec (C : Ctx) {M : Finset ℕ} {D Q d₀ : ℕ} {s₀ : St} {m
   refine Runs.seqs_nilR (by omega) fun m₁₁ h₁₁ f₁₁ => ?_
   have F₁₁ : Frm L TL m₇ m₁₁ := (Frm.reg1 (by simp [TL]) (by omega) f₈).trans
     ((Frm.reg (by simp [TL]) (by omega) f₉ (by simp [TL, T267])).trans
-      ((Frm.reg1 (by simp [TL]) (by omega) f₁₀).trans (Frm.reg1 (by simp [TL, T267]) (by omega) f₁₁)))
+      ((Frm.reg1 (by simp [TL]) (by omega) f₁₀).trans (Frm.reg1 (by simp [TL, T267])
+          (by omega) f₁₁)))
   have Fall : Frm L TL m m₁₁ := F₁.trans (F₄.trans (F₅.trans
     ((F₆.mono fun a ha => T267_TL ha).trans (F₇.trans F₁₁))))
   have R₁₁ := R₇.reg (T := TL) tT F₁₁ (fun a ha => by
@@ -231,7 +237,7 @@ theorem linkLoop_spec (C : Ctx) {M : Finset ℕ} {D Q d₀ : ℕ} {s₀ : St} {m
   rw [hR.r17, hR.rep.one]
   simp only [linkCond]
   constructor
-  · intro he; split_ifs at he with hp <;> omega
+  · intro he; split_ifs at he with hp; omega
   · intro hne; rw [if_pos (by omega)]
 
 end Formalgo.Algorithms.ShortestPaths

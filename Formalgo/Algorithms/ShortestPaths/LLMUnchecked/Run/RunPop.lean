@@ -145,7 +145,8 @@ theorem popBody_spec (C : Ctx) {M : Finset ℕ} {Q : ℕ} {s₀ : St} {m₀ : Me
   refine Runs.seqs_cons (Runs.lessR (by omega) (by omega) (by omega) fun m₁₁ h₁₁ f₁₁ => ?_)
   refine Runs.seqs_nilR (by omega) fun m₁₂ h₁₂ f₁₂ => ?_
   have F₁₂ : Frm L TP m₉ m₁₂ := (Frm.reg1 (by simp [TP, TL]) (by omega) f₁₀).trans
-    ((Frm.reg1 (by simp [TP]) (by omega) f₁₁).trans (Frm.reg1 (by simp [TP, TL, T267]) (by omega) f₁₂))
+    ((Frm.reg1 (by simp [TP]) (by omega) f₁₁).trans (Frm.reg1 (by simp [TP, TL, T267])
+        (by omega) f₁₂))
   have Fall : Frm L TP m m₁₂ := F₃.trans
     ((hL8.frm.mono fun a ha => Or.inl ha).trans (F₉.trans F₁₂))
   have R₁₂ := R₉.reg (T := TP) (fun a ha => TP_tmp ha) F₁₂ (fun a ha => by
@@ -185,7 +186,7 @@ theorem popLoop_spec (C : Ctx) {M : Finset ℕ} {Q : ℕ} {s₀ : St} {m₀ : Me
   rw [hR.r13, hR.rep.one]
   simp only [rootsCond]
   constructor
-  · intro he; split_ifs at he with hp <;> omega
+  · intro he; split_ifs at he with hp; omega
   · intro hne; rw [if_pos (by omega)]
 
 end Formalgo.Algorithms.ShortestPaths
