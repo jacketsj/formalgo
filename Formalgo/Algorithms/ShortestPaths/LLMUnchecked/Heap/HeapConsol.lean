@@ -10,21 +10,24 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {s : St} {M : Finset ℕ}
+variable {R : Type*} [LinearOrder R]
 
-theorem card_tset_le (D : ℕ) (s : St) : (tset D s).card ≤ D :=
+variable {s : StW R} {M : Finset ℕ}
+
+omit [LinearOrder R] in
+theorem card_tset_le (D : ℕ) (s : StW R) : (tset D s).card ≤ D :=
   (Finset.card_erase_le).trans (Finset.card_image_le.trans (by simp))
 
-theorem link_loop (C : Ctx) {D Q d₀ : ℕ} {s₀ : St} {a : St × ℕ × ℕ}
+theorem link_loop (C : CtxW R) {D Q d₀ : ℕ} {s₀ : StW R} {a : StW R × ℕ × ℕ}
     (h : LinkInv D M Q d₀ s₀ a) (hFu : D ≤ C.F) :
     LinkInv D M Q d₀ s₀ (whileF linkCond linkStep C.F a) ∧
       ¬linkCond (whileF linkCond linkStep C.F a) :=
-  ⟨whileF_induct (LinkInv D M Q d₀ s₀) (fun b hb hc => (hb.step hc).1) C.F a h,
-    whileF_stops (LinkInv D M Q d₀ s₀) (fun b => (tset D b.1).card) (fun b hb hc => hb.step hc)
+  ⟨whileF_induct (LinkInv D M Q d₀ s₀) (fun _ hb hc => (hb.step hc).1) C.F a h,
+    whileF_stops (LinkInv D M Q d₀ s₀) (fun b => (tset D b.1).card) (fun _ hb hc => hb.step hc)
       C.F a h ((card_tset_le D a.1).trans hFu)⟩
 
 /-- The invariant of the pops. -/
-structure PopInv (D : ℕ) (M : Finset ℕ) (Q : ℕ) (s₀ s : St) : Prop where
+structure PopInv (D : ℕ) (M : Finset ℕ) (Q : ℕ) (s₀ s : StW R) : Prop where
   forest : Forest s M 0
   roots : RootList s M (tset D s)
   tbl : TblInv D M s
@@ -32,10 +35,10 @@ structure PopInv (D : ℕ) (M : Finset ℕ) (Q : ℕ) (s₀ s : St) : Prop where
   keep : Keep M s₀ s
 
 /-- The end of a pop: put the root in the table. -/
-def popFin (a : St × ℕ × ℕ) : St := tick 25 (setTbl a.2.2 a.2.1 a.1)
+def popFin (a : StW R × ℕ × ℕ) : StW R := tick 25 (setTbl a.2.2 a.2.1 a.1)
 
 /-- The start of a pop. -/
-theorem PopInv.start {Q : ℕ} {s₀ : St} {D : ℕ} (h : PopInv D M Q s₀ s) (hc : rootsCond s) :
+theorem PopInv.start {Q : ℕ} {s₀ : StW R} {D : ℕ} (h : PopInv D M Q s₀ s) (hc : rootsCond s) :
     LinkInv D M (Q - 25) (s.deg 0 - 1) s₀
       (popDeg s, s.ch 0 (s.deg 0 - 1), (popDeg s).deg (s.ch 0 (s.deg 0 - 1))) ∧ 65 ≤ Q := by
   obtain ⟨hF, hR, hT, hQ, hk⟩ := h
@@ -57,7 +60,7 @@ theorem PopInv.start {Q : ℕ} {s₀ : St} {D : ℕ} (h : PopInv D M Q s₀ s) (
   · exact hk.trans ⟨rfl, rfl, fun w _ h0 => ⟨hdeg w h0, rfl, rfl⟩⟩
 
 /-- The end of a pop. -/
-theorem PopInv.finish (C : Ctx) {n Q d₀ : ℕ} {s₀ : St} {b : St × ℕ × ℕ}
+theorem PopInv.finish (C : CtxW R) {n Q d₀ : ℕ} {s₀ : StW R} {b : StW R × ℕ × ℕ}
     (hb : LinkInv C.D M (Q - 25) d₀ s₀ b) (hstop : ¬linkCond b) (h65 : 65 ≤ Q)
     (hM : ∀ v ∈ M, 1 ≤ v ∧ v ≤ n) (hD : C.D = 2 * Nat.size n) :
     PopInv C.D M Q s₀ (popFin b) ∧ (popFin b).deg 0 = d₀ := by
@@ -79,7 +82,7 @@ theorem PopInv.finish (C : Ctx) {n Q d₀ : ℕ} {s₀ : St} {b : St × ℕ × �
     omega
   · exact hb.keep.trans ⟨rfl, rfl, fun _ _ _ => ⟨rfl, rfl, rfl⟩⟩
 
-theorem PopInv.step (C : Ctx) {n Q : ℕ} {s₀ : St} (h : PopInv C.D M Q s₀ s) (hc : rootsCond s)
+theorem PopInv.step (C : CtxW R) {n Q : ℕ} {s₀ : StW R} (h : PopInv C.D M Q s₀ s) (hc : rootsCond s)
     (hM : ∀ v ∈ M, 1 ≤ v ∧ v ≤ n) (hD : C.D = 2 * Nat.size n) (hFu : C.D ≤ C.F) :
     PopInv C.D M Q s₀ (popStep C s) ∧ (popStep C s).deg 0 < s.deg 0 := by
   obtain ⟨hF, hR, hT, hQ, hk⟩ := h
@@ -131,7 +134,7 @@ theorem PopInv.step (C : Ctx) {n Q : ℕ} {s₀ : St} (h : PopInv C.D M Q s₀ s
   · exact hb.keep.trans ⟨rfl, rfl, fun _ _ _ => ⟨rfl, rfl, rfl⟩⟩
   · change b.1.deg 0 < s.deg 0; rw [hb.deg0]; omega
 
-theorem pop_loop (C : Ctx) {n Q : ℕ} {s₀ : St} (h : PopInv C.D M Q s₀ s)
+theorem pop_loop (C : CtxW R) {n Q : ℕ} {s₀ : StW R} (h : PopInv C.D M Q s₀ s)
     (hM : ∀ v ∈ M, 1 ≤ v ∧ v ≤ n) (hD : C.D = 2 * Nat.size n) (hFu : C.D ≤ C.F)
     (hF0 : s.deg 0 ≤ C.F) :
     PopInv C.D M Q s₀ (whileF rootsCond (popStep C) C.F s) ∧

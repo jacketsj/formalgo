@@ -23,7 +23,7 @@ noncomputable def realProgram (boot : RCmd) (fix core : DCmd) : RCmd :=
   .seqs [boot, reloc, (DCmd.seqs [fix, core, moveOut]).toRaw, finishRaw]
 
 /-- The memory of the standard tape holding `L` from cell `0`. -/
-theorem read_foldr_zipIdx (L : List ℝ) (k a : ℕ) :
+theorem read_foldr_zipIdx_real (L : List ℝ) (k a : ℕ) :
     ((L.zipIdx k).foldr (fun (p : ℝ × ℕ) tape => tape.write (p.2 : ℕ) p.1)
       (⟨fun _ => default⟩ : Tape ℕ ℝ)).read a =
       if k ≤ a then L.getD (a - k) 0 else 0 := by
@@ -46,7 +46,7 @@ theorem standard_encode {I O : Type*} [Code I ℝ] [Code O ℝ] (x : I) :
       ⟨fun i => (Code.encode (Value := ℝ) x).getD i 0⟩ := by
   change Tape.mk _ = _
   congr 1; funext a
-  have := read_foldr_zipIdx (Code.encode (Value := ℝ) x) 0 a
+  have := read_foldr_zipIdx_real (Code.encode (Value := ℝ) x) 0 a
   simp only [Nat.zero_le, if_true, Nat.sub_zero] at this
   rw [← this]; rfl
 

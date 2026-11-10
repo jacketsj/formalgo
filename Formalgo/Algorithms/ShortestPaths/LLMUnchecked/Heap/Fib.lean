@@ -16,13 +16,16 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St Finset
 
-variable {s : St} {M : Finset ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s : StW R} {M : Finset ℕ}
 
 /-- `v` lies in the tree below `x`. -/
-inductive Desc (s : St) (M : Finset ℕ) (x : ℕ) : ℕ → Prop
+inductive Desc (s : StW R) (M : Finset ℕ) (x : ℕ) : ℕ → Prop
   | self : Desc s M x x
   | step {v : ℕ} : v ∈ M → s.par v ≠ 0 → Desc s M x (s.par v) → Desc s M x v
 
+omit [LinearOrder R] in
 theorem Desc.trans {a b v : ℕ} (h₁ : Desc s M a b) (h₂ : Desc s M b v) : Desc s M a v := by
   induction h₂ with
   | self => exact h₁
@@ -37,11 +40,12 @@ theorem Desc.ht_le (h : Forest s M 0) {a v : ℕ} (hd : Desc s M a v) (hv : v �
     have := ih (h.up _ hv' hp).1
     omega
 
-theorem Desc.mem (h : Forest s M 0) {a v : ℕ} (hd : Desc s M a v) (ha : a ∈ M) : v ∈ M := by
+theorem Desc.mem (_h : Forest s M 0) {a v : ℕ} (hd : Desc s M a v) (ha : a ∈ M) : v ∈ M := by
   cases hd with
   | self => exact ha
   | step hv _ _ => exact hv
 
+omit [LinearOrder R] in
 /-- The ancestors of a node form a chain. -/
 theorem Desc.chain {a b v : ℕ} (ha : Desc s M a v) (hb : Desc s M b v) :
     Desc s M a b ∨ Desc s M b a := by
@@ -53,17 +57,19 @@ theorem Desc.chain {a b v : ℕ} (ha : Desc s M a v) (hb : Desc s M b v) :
     | step _ _ hb' => exact ih hb'
 
 /-- The nodes below `x`. -/
-noncomputable def sub (s : St) (M : Finset ℕ) (x : ℕ) : Finset ℕ :=
+noncomputable def sub (s : StW R) (M : Finset ℕ) (x : ℕ) : Finset ℕ :=
   open Classical in M.filter (Desc s M x)
 
+omit [LinearOrder R] in
 theorem mem_sub {x v : ℕ} : v ∈ sub s M x ↔ v ∈ M ∧ Desc s M x v := by
   classical
   simp [sub]
 
+omit [LinearOrder R] in
 theorem sub_subset {x : ℕ} : sub s M x ⊆ M := fun _ hv => (mem_sub.1 hv).1
 
 /-- The children of `x`. -/
-def kids (s : St) (M : Finset ℕ) (x : ℕ) : Finset ℕ := M.filter fun c => s.par c = x
+def kids (s : StW R) (M : Finset ℕ) (x : ℕ) : Finset ℕ := M.filter fun c => s.par c = x
 
 /-- Ranks under an injective key run through `0, …, |T| - 1`. -/
 theorem sum_rank (f g : ℕ → ℕ) : ∀ T : Finset ℕ, Set.InjOn f T →
@@ -136,7 +142,8 @@ theorem Forest.fib_le (h : Forest s M 0) :
     · obtain ⟨c, hc, hvc⟩ := mem_biUnion.1 hv
       obtain ⟨cM, cp, _⟩ := hkid c hc
       obtain ⟨vM, hd⟩ := mem_sub.1 hvc
-      exact mem_sub.2 ⟨vM, (Desc.step cM (by rw [cp]; exact hx0) (by rw [cp]; exact .self)).trans hd⟩
+      exact mem_sub.2
+        ⟨vM, (Desc.step cM (by rw [cp]; exact hx0) (by rw [cp]; exact .self)).trans hd⟩
   have hxn : x ∉ (kids s M x).biUnion (sub s M) := by
     intro hv
     obtain ⟨c, hc, hvc⟩ := mem_biUnion.1 hv

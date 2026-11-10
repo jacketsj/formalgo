@@ -10,12 +10,15 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {C : Ctx} {G : WGraph} {src W : ℕ}
+variable {R : Type*} [AddCommMonoid R] [LinearOrder R] [CanonicallyOrderedAdd R]
+  {C : CtxW R} {G : WGraphW R} {src : ℕ} {W : R}
 
-theorem decKey_stat (C : Ctx) (v nk : ℕ) (t : St) : (decKey C v nk t).stat = t.stat := by
-  have hc : ∀ (b : St × ℕ), b.1.stat = t.stat →
+omit [AddCommMonoid R] [CanonicallyOrderedAdd R] in
+theorem decKey_stat (C : CtxW R) (v : ℕ) (nk : R) (t : StW R) :
+    (decKey C v nk t).stat = t.stat := by
+  have hc : ∀ (b : StW R × ℕ), b.1.stat = t.stat →
       (whileF cascCond cascStep C.F b).1.stat = t.stat := fun b hb =>
-    whileF_induct (c := cascCond) (f := cascStep) (fun b : St × ℕ => b.1.stat = t.stat)
+    whileF_induct (c := cascCond) (f := cascStep) (fun b : StW R × ℕ => b.1.stat = t.stat)
       (fun b hb _ => hb) C.F b hb
   unfold decKey
   dsimp only
@@ -25,7 +28,8 @@ theorem decKey_stat (C : Ctx) (v nk : ℕ) (t : St) : (decKey C v nk t).stat = t
     | exact updMinKey_of (fun t' => t'.stat = t.stat) (fun _ => rfl) rfl
     | exact updMinKey_of (fun t' => t'.stat = t.stat) (fun _ => hc _ rfl) (hc _ rfl)
 
-theorem relax_stat2 (u v w : ℕ) (t : St) (x : ℕ) :
+omit [CanonicallyOrderedAdd R] in
+theorem relax_stat2 (u v : ℕ) (w : R) (t : StW R) (x : ℕ) :
     (relax C u v w t).stat x = 2 ↔ t.stat x = 2 := by
   unfold relax
   dsimp only
@@ -41,13 +45,13 @@ theorem relax_stat2 (u v w : ℕ) (t : St) (x : ℕ) :
   · exact Iff.rfl
 
 /-- The invariant of the scan loop. -/
-def ScanP (hs : src < G.n) (u : Fin G.n) (K Q : ℕ) (s₀ : St) (a : St × ℕ × List (ℕ × ℕ)) :
-    Prop :=
+def ScanP (hs : src < G.n) (u : Fin G.n) (K : R) (Q : ℕ) (s₀ : StW R)
+    (a : StW R × ℕ × List (ℕ × R)) : Prop :=
   a.2.1 = (u : ℕ) + 1 ∧ (∃ pre, ScanInv (C := C) (W := W) hs u K Q pre a.1 a.2.2) ∧
     ∀ x, a.1.stat x = 2 ↔ s₀.stat x = 2
 
 theorem ScanP.step (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {u : Fin G.n}
-    {K Q : ℕ} {s₀ : St} {a : St × ℕ × List (ℕ × ℕ)}
+    {K : R} {Q : ℕ} {s₀ : StW R} {a : StW R × ℕ × List (ℕ × R)}
     (h : ScanP (C := C) (W := W) hs u K Q s₀ a) (hc : scanCond a) :
     ScanP (C := C) (W := W) hs u K Q s₀ (scanStep C a) ∧
       (scanStep C a).2.2.length < a.2.2.length := by
@@ -73,14 +77,14 @@ theorem ScanP.step (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {u : Fin G
         by_cases hlt : t.key ((u : ℕ) + 1) + G.weight s(u, v') < t.key ((v' : ℕ) + 1)
         · rw [if_pos hlt]; exact (relax_dec hC hA hI hadj h1 hlt).tick hQ
         · rw [if_neg hlt]
-          exact (relax_keep hI ⟨by omega, fun _ => by simp only; omega⟩).tick hQ
+          exact (relax_keep hI ⟨by omega, fun _ => not_lt.1 hlt⟩).tick hQ
       · rw [if_neg h1]
         exact (relax_keep hI ⟨h0, fun h => absurd h h1⟩).tick hQ
   · change (relax C _ _ _ t).stat x = 2 ↔ _
     rw [relax_stat2]; exact hst x
 
-theorem scan_loop (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {u : Fin G.n} {K Q : ℕ}
-    {s₀ : St} (h : ScanInv (C := C) (W := W) hs u K Q [] s₀ (C.adj ((u : ℕ) + 1))) :
+theorem scan_loop (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {u : Fin G.n} {K : R}
+    {Q : ℕ} {s₀ : StW R} (h : ScanInv (C := C) (W := W) hs u K Q [] s₀ (C.adj ((u : ℕ) + 1))) :
     ScanInv (C := C) (W := W) hs u K Q (C.adj ((u : ℕ) + 1))
         (whileF scanCond (scanStep C) C.F (s₀, (u : ℕ) + 1, C.adj ((u : ℕ) + 1))).1 [] ∧
       ∀ x, (whileF scanCond (scanStep C) C.F (s₀, (u : ℕ) + 1, C.adj ((u : ℕ) + 1))).1.stat x = 2 ↔
@@ -97,8 +101,10 @@ theorem scan_loop (hC : CtxOK C) (hA : AdjOK C G W) {hs : src < G.n} {u : Fin G.
   subst hpre
   exact ⟨hI, hst⟩
 
+omit [CanonicallyOrderedAdd R] in
 /-- After the scan, every settled vertex has relaxed its edges. -/
-theorem ScanInv.relaxed (hA : AdjOK C G W) {hs : src < G.n} {u : Fin G.n} {K Q : ℕ} {t : St}
+theorem ScanInv.relaxed (hA : AdjOK C G W) {hs : src < G.n} {u : Fin G.n} {K : R} {Q : ℕ}
+    {t : StW R}
     (h : ScanInv (C := C) (W := W) hs u K Q (C.adj ((u : ℕ) + 1)) t []) : Relaxed G 0 t := by
   intro a b _ ha hab
   by_cases hau : a = u

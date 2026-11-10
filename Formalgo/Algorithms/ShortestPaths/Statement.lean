@@ -1,10 +1,13 @@
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.Proof
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.RealRun.RFinal
 
 /-!
 # Single-source shortest paths
 -/
 
 namespace Formalgo.Algorithms.ShortestPaths
+
+open NNReal
 
 /-- The number of vertices `n`, a graph on `Fin n`, a weight in `W` on each edge, and a source. -/
 abbrev Input (W : Type*) := Σ n, Σ G : SimpleGraph (Fin n), (G.edgeSet → W) × ℕ
@@ -39,5 +42,12 @@ theorem singleSourceShortestPathsInEPlusVLogV :
     ∃ c, (tdWordRAM [.less, .add, .sub]).SolvableWithin (singleSourceShortestPaths ℕ)
       fun ⟨V, G, _⟩ => c * (G.edgeSet.ncard + V * Nat.log 2 V) + c :=
   shortestPaths_wordRAM _ fun _ _ _ _ _ h => h
+
+/-- A real RAM with `<`, `+` and `−` finds single-source shortest paths with nonnegative real
+weights in `O(E + V log V)` steps (Dijkstra's algorithm with a Fibonacci heap). -/
+theorem singleSourceShortestPathsInEPlusVLogV_realRAM :
+    ∃ c, RealRAM.withAddSub.semantics.SolvableWithin (singleSourceShortestPaths ℝ≥0)
+      fun ⟨V, G, _⟩ => c * (G.edgeSet.ncard + V * Nat.log 2 V) + c :=
+  shortestPaths_realRAM _ fun _ _ _ _ _ h => h
 
 end Formalgo.Algorithms.ShortestPaths

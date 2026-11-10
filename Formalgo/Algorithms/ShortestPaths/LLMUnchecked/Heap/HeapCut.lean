@@ -10,33 +10,44 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St
 
-variable {s : St} {M L : Finset ℕ} {e v p : ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s : StW R} {M L : Finset ℕ} {e v p : ℕ}
 
 /-- Move `v` from the children of `p` to the root array. -/
-def moveRoot (v p : ℕ) (s : St) : St := attach v 0 (detach v p s)
+def moveRoot (v p : ℕ) (s : StW R) : StW R := attach v 0 (detach v p s)
 
 section
 variable (v p s)
+omit [LinearOrder R] in
 theorem moveRoot_par : (moveRoot v p s).par = update s.par v 0 := rfl
+omit [LinearOrder R] in
 theorem moveRoot_deg (hp : p ≠ 0) :
     (moveRoot v p s).deg = update (update s.deg p (s.deg p - 1)) 0 (s.deg 0 + 1) := by
   simp [moveRoot, attach, detach, update_of_ne hp.symm]
+omit [LinearOrder R] in
 theorem moveRoot_pos (hp : p ≠ 0) : (moveRoot v p s).pos =
     update (update s.pos (s.ch p (s.deg p - 1)) (s.pos v)) v (s.deg 0) := by
   simp [moveRoot, attach, detach, update_of_ne hp.symm]
+omit [LinearOrder R] in
 theorem moveRoot_ch (hp : p ≠ 0) : (moveRoot v p s).ch =
     update (update s.ch p (update (s.ch p) (s.pos v) (s.ch p (s.deg p - 1)))) 0
       (update (s.ch 0) (s.deg 0) v) := by
   simp [moveRoot, attach, detach, update_of_ne hp.symm]
+omit [LinearOrder R] in
 theorem moveRoot_key : (moveRoot v p s).key = s.key := rfl
+omit [LinearOrder R] in
 theorem moveRoot_ht : (moveRoot v p s).ht = s.ht := rfl
+omit [LinearOrder R] in
 theorem moveRoot_lt : (moveRoot v p s).lt = s.lt := rfl
+omit [LinearOrder R] in
 theorem moveRoot_clock : (moveRoot v p s).clock = s.clock := rfl
+omit [LinearOrder R] in
 theorem moveRoot_mark : (moveRoot v p s).mark = s.mark := rfl
 end
 
 /-- Facts about `v`, its parent and the parent's last child. -/
-structure CutFacts (s : St) (M : Finset ℕ) (v p : ℕ) : Prop where
+structure CutFacts (s : StW R) (M : Finset ℕ) (v p : ℕ) : Prop where
   vM : v ∈ M
   pM : p ∈ M
   p0 : p ≠ 0
@@ -53,6 +64,7 @@ theorem Forest.cutFacts (h : Forest s M e) (hv : v ∈ M) (hp : s.par v ≠ 0) :
   obtain ⟨l1, l2, l3⟩ := h.down _ h1 (s.deg (s.par v) - 1) (by omega)
   exact ⟨hv, h1, hp, rfl, h2, h3, l1, l2, l3⟩
 
+omit [LinearOrder R] in
 theorem older_moveRoot_le {w : ℕ} (hw : w ≠ v) (hwp : s.par w ≠ 0) :
     older (moveRoot v p s) M w ≤ older s M w := by
   refine Finset.card_le_card fun c hc => ?_
@@ -70,7 +82,8 @@ theorem Forest.move_root (h : Forest s M e) (hf : CutFacts s M v p) (he : e = 0 
   set i := s.pos v with hi
   set last := s.ch p (d - 1) with hlast
   have hv0 : v ≠ 0 := ne_zero_of_mem h vM
-  have hpv : p ≠ v := by rintro rfl; have := h.height _ vM (by rw [vp]; exact p0); rw [vp] at this; omega
+  have hpv : p ≠ v := by
+    rintro rfl; have := h.height _ vM (by rw [vp]; exact p0); rw [vp] at this; omega
   have hlv : last ≠ v → i ≠ d - 1 := fun hne hc => hne (by rw [hlast, ← hc, chv])
   have hpar : ∀ w, w ≠ v → (moveRoot v p s).par w = s.par w := fun w hw => by
     rw [moveRoot_par, update_of_ne hw]
@@ -155,6 +168,7 @@ theorem Forest.move_root (h : Forest s M e) (hf : CutFacts s M v p) (he : e = 0 
     rw [hpar w hwv] at hp; exact h.ltclock w hw hp
   · exact h.mark w hw
 
+omit [LinearOrder R] in
 theorem RootList.move_root (h : RootList s M L) (hf : CutFacts s M v p) :
     RootList (moveRoot v p s) M L := by
   obtain ⟨vM, pM, p0, vp, i_lt, chv, lastM, lastp, lastpos⟩ := hf
@@ -190,6 +204,7 @@ theorem RootList.move_root (h : RootList s M L) (hf : CutFacts s M v p) :
       rw [hroot w hp, hdeg0, hch0, update_of_ne (Nat.ne_of_lt h1)]
       exact ⟨by omega, h2⟩
 
+omit [LinearOrder R] in
 theorem moveRoot_deg_p (hp : p ≠ 0) : (moveRoot v p s).deg p = s.deg p - 1 := by
   rw [moveRoot_deg _ _ _ hp, update_of_ne hp, update_self]
 

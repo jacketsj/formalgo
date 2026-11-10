@@ -10,10 +10,12 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {s : St} {M : Finset ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s : StW R} {M : Finset ℕ}
 
 /-- The context fits the input: `D = 2 · size n`, and the fuel covers every loop. -/
-structure CtxOK (C : Ctx) : Prop where
+structure CtxOK (C : CtxW R) : Prop where
   D_eq : C.D = 2 * Nat.size C.n
   fuel : C.n + C.D + 1 ≤ C.F
 
@@ -22,7 +24,7 @@ theorem card_le_n {n : ℕ} (hM : ∀ v ∈ M, 1 ≤ v ∧ v ≤ n) : M.card ≤
         have := hM v hv; simp only [Finset.mem_erase, Finset.mem_range]; omega
     _ = n := by rw [Finset.card_erase_of_mem (by simp), Finset.card_range]; rfl
 
-theorem extract_spec (C : Ctx) (hC : CtxOK C) (hH : HeapInv C.n s M) (hne : M.Nonempty) :
+theorem extract_spec (C : CtxW R) (hC : CtxOK C) (hH : HeapInv C.n s M) (hne : M.Nonempty) :
     HeapInv C.n (extract C s) (M.erase s.hmin) ∧ Keep M s (extract C s) ∧
       (extract C s).time + 65 * pot (extract C s) (M.erase s.hmin) ≤
         s.time + 65 * pot s M + 200 * (C.D + 1) ∧
@@ -40,7 +42,7 @@ theorem extract_spec (C : Ctx) (hC : CtxOK C) (hH : HeapInv C.n s M) (hne : M.No
   -- Moving its children.
   have hI : MoveInv M z (s₁.time + 65 * pot s₁ M + 95 * s₁.deg z) s (s₁, z) :=
     ⟨rfl, m1, hF1, hR1, hzp1, le_refl _, hk1, htb1⟩
-  obtain ⟨hmv, hd0⟩ := move_loop C hI (by show s₁.deg z ≤ C.F; rw [hdz]; omega)
+  obtain ⟨hmv, hd0⟩ := move_loop C hI (by change s₁.deg z ≤ C.F; rw [hdz]; omega)
   set s₂ := (whileF moveCond moveStep C.F (s₁, z)).1 with hs₂
   have hF2 : Forest s₂ (M.erase z) 0 := hmv.forest.erase_root m1 hmv.zpar hd0
   have hR2 : RootList s₂ (M.erase z) ∅ := by

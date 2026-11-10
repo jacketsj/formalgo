@@ -10,20 +10,24 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {s : St} {M L : Finset ℕ} {e v p : ℕ}
+variable {R : Type*} [LinearOrder R]
+
+variable {s : StW R} {M L : Finset ℕ} {e v p : ℕ}
 
 /-- The marked nodes that are not roots. -/
-def marked (s : St) (M : Finset ℕ) : Finset ℕ := M.filter fun w => s.par w ≠ 0 ∧ s.mark w = 1
+def marked (s : StW R) (M : Finset ℕ) : Finset ℕ := M.filter fun w => s.par w ≠ 0 ∧ s.mark w = 1
 
 /-- The potential: roots in the array, and twice the marked non-roots. -/
-def pot (s : St) (M : Finset ℕ) : ℕ := s.deg 0 + 2 * (marked s M).card
+def pot (s : StW R) (M : Finset ℕ) : ℕ := s.deg 0 + 2 * (marked s M).card
 
-theorem cut_eq (v p : ℕ) (s : St) : cut v p s = setMark v 0 (moveRoot v p s) := rfl
+omit [LinearOrder R] in
+theorem cut_eq (v p : ℕ) (s : StW R) : cut v p s = setMark v 0 (moveRoot v p s) := rfl
 
 theorem Forest.tick (h : Forest s M e) (c : ℕ) : Forest (tick c s) M e :=
   h.congr rfl rfl rfl rfl (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl) (fun _ _ => rfl)
     (fun _ _ _ => rfl)
 
+omit [LinearOrder R] in
 theorem RootList.tick (h : RootList s M L) (c : ℕ) : RootList (tick c s) M L :=
   h.congr (fun _ _ => rfl) rfl rfl (fun _ _ _ => rfl)
 
@@ -41,6 +45,7 @@ theorem Forest.setMark_root (h : Forest s M e) (hv : s.par v = 0) :
       · simp
       · rw [update_of_ne hwv]; exact h.mark w hw }
 
+omit [LinearOrder R] in
 theorem RootList.setMark (h : RootList s M L) (v k : ℕ) : RootList (setMark v k s) M L :=
   h.congr (fun _ _ => rfl) rfl rfl (fun _ _ _ => rfl)
 
@@ -58,7 +63,7 @@ theorem Forest.setMark_one (h : Forest s M p) (hpM : p ∈ M) (hm : s.mark p = 0
       · simp
       · rw [update_of_ne hwp]; exact h.mark w hw }
 
-theorem Forest.setKey (h : Forest s M e) (hv : v ∈ M) {nk : ℕ} (hnk : nk ≤ s.key v)
+theorem Forest.setKey (h : Forest s M e) (hv : v ∈ M) {nk : R} (hnk : nk ≤ s.key v)
     (hp : s.par v = 0 ∨ s.key (s.par v) ≤ nk) : Forest (setKey v nk s) M e :=
   { h with
     order := fun w hw hpw => by
@@ -73,15 +78,17 @@ theorem Forest.setKey (h : Forest s M e) (hv : v ∈ M) {nk : ℕ} (hnk : nk ≤
           rw [update_self, update_of_ne hpv]; exact hp
       · rw [update_of_ne hwv]
         rcases eq_or_ne (s.par w) v with hpv | hpv
-        · rw [hpv, update_self]; rw [hpv] at this; omega
+        · rw [hpv, update_self]; rw [hpv] at this; exact hnk.trans this
         · rw [update_of_ne hpv]; exact this }
 
-theorem RootList.setKey (h : RootList s M L) (v k : ℕ) : RootList (setKey v k s) M L :=
+omit [LinearOrder R] in
+theorem RootList.setKey (h : RootList s M L) (v : ℕ) (k : R) : RootList (setKey v k s) M L :=
   h.congr (fun _ _ => rfl) rfl rfl (fun _ _ _ => rfl)
 
 /-! ### Marked nodes under a cut -/
 
-theorem marked_cut (hp : p ≠ 0) : marked (cut v p s) M = (marked s M).erase v := by
+omit [LinearOrder R] in
+theorem marked_cut (_hp : p ≠ 0) : marked (cut v p s) M = (marked s M).erase v := by
   ext w
   simp only [marked, cut_eq, Finset.mem_filter, Finset.mem_erase, setMark, moveRoot_par,
     moveRoot_mark]
@@ -89,6 +96,7 @@ theorem marked_cut (hp : p ≠ 0) : marked (cut v p s) M = (marked s M).erase v 
   · simp
   · simp [hwv]
 
+omit [LinearOrder R] in
 theorem marked_setMark_one : marked (setMark p 1 s) M ⊆ insert p (marked s M) := by
   intro w hw
   simp only [marked, setMark, Finset.mem_filter, Finset.mem_insert] at hw ⊢
@@ -96,20 +104,21 @@ theorem marked_setMark_one : marked (setMark p 1 s) M ⊆ insert p (marked s M) 
   · exact .inl rfl
   · rw [update_of_ne hwp] at hw; exact .inr hw
 
+omit [LinearOrder R] in
 theorem cut_deg0 (hp : p ≠ 0) : (cut v p s).deg 0 = s.deg 0 + 1 := by
   rw [cut_eq]; simp only [setMark]; rw [moveRoot_deg _ _ _ hp, update_self]
 
 /-! ### The cascade -/
 
 /-- The invariant of the cascade at `(s, p)`. -/
-structure CascInv (M : Finset ℕ) (Q : ℕ) (a : St × ℕ) : Prop where
+structure CascInv (M : Finset ℕ) (Q : ℕ) (a : StW R × ℕ) : Prop where
   forest : Forest a.1 M a.2
   roots : RootList a.1 M ∅
   pM : a.2 ∈ M
   slack : a.1.par a.2 ≠ 0 → older a.1 M a.2 ≤ a.1.deg a.2 + a.1.mark a.2 + 1
   cost : a.1.time + 65 * pot a.1 M ≤ Q
 
-theorem CascInv.step {Q : ℕ} {a : St × ℕ} (h : CascInv M Q a) (hc : cascCond a) :
+theorem CascInv.step {Q : ℕ} {a : StW R × ℕ} (h : CascInv M Q a) (hc : cascCond a) :
     CascInv M Q (cascStep a) ∧ (marked (cascStep a).1 M).card < (marked a.1 M).card := by
   obtain ⟨s, p⟩ := a
   obtain ⟨hF, hR, hpM, hsl, hQ⟩ := h
@@ -156,7 +165,7 @@ theorem CascInv.step {Q : ℕ} {a : St × ℕ} (h : CascInv M Q a) (hc : cascCon
     rw [hmk]; omega
 
 /-- After the cascade: the forest holds with no exception. -/
-theorem CascInv.finish {Q : ℕ} {a : St × ℕ} (h : CascInv M Q a) (hc : ¬cascCond a) :
+theorem CascInv.finish {Q : ℕ} {a : StW R × ℕ} (h : CascInv M Q a) (hc : ¬cascCond a) :
     let s := if a.1.par a.2 ≠ 0 then setMark a.2 1 a.1 else a.1
     Forest s M 0 ∧ RootList s M ∅ ∧ s.time + 65 * pot s M ≤ Q + 130 := by
   obtain ⟨s, p⟩ := a

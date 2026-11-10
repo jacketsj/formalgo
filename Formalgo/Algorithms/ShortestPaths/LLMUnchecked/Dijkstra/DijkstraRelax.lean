@@ -10,15 +10,16 @@ namespace Formalgo.Algorithms.ShortestPaths
 
 open Function St LLMUnchecked
 
-variable {C : Ctx} {G : WGraph} {src W : ℕ}
+variable {R : Type*} [AddCommMonoid R] [LinearOrder R] [CanonicallyOrderedAdd R]
+  {C : CtxW R} {G : WGraphW R} {src : ℕ} {W : R}
 
 /-- The edges in `pre` have been relaxed from `x`. -/
-def Done (x : ℕ) (pre : List (ℕ × ℕ)) (s : St) : Prop :=
+def Done (x : ℕ) (pre : List (ℕ × R)) (s : StW R) : Prop :=
   ∀ p ∈ pre, s.stat p.1 ≠ 0 ∧ (s.stat p.1 = 1 → s.key p.1 ≤ s.key x + p.2)
 
 /-- The invariant while relaxing the edges of `u`. -/
-structure ScanInv (hs : src < G.n) (u : Fin G.n) (K Q : ℕ) (pre : List (ℕ × ℕ))
-    (t : St) (l : List (ℕ × ℕ)) : Prop where
+structure ScanInv (hs : src < G.n) (u : Fin G.n) (K : R) (Q : ℕ) (pre : List (ℕ × R))
+    (t : StW R) (l : List (ℕ × R)) : Prop where
   split : C.adj ((u : ℕ) + 1) = pre ++ l
   g : GInv hs t
   rel : Relaxed G ((u : ℕ) + 1) t
@@ -28,19 +29,23 @@ structure ScanInv (hs : src < G.n) (u : Fin G.n) (K Q : ℕ) (pre : List (ℕ ×
   ku : t.key ((u : ℕ) + 1) + W ≤ K
   cost : t.time + 65 * pot t (hset G.n t) + 325 * l.length ≤ Q
 
-theorem GInv.tick {hs : src < G.n} {t : St} (h : GInv hs t) (c : ℕ) : GInv hs (tick c t) :=
+omit [CanonicallyOrderedAdd R] in
+theorem GInv.tick {hs : src < G.n} {t : StW R} (h : GInv hs t) (c : ℕ) : GInv hs (tick c t) :=
   ⟨h.statle, h.range, h.fresh, h.settled, h.upper, h.source,
     ⟨h.heap.range, h.heap.forest.tick c, h.heap.roots.tick c, h.heap.min, h.heap.tbl⟩, h.empty⟩
 
-theorem ScanInv.tick {hs : src < G.n} {u : Fin G.n} {K Q : ℕ} {pre l : List (ℕ × ℕ)} {t : St}
+omit [CanonicallyOrderedAdd R] in
+theorem ScanInv.tick {hs : src < G.n} {u : Fin G.n} {K : R} {Q : ℕ} {pre l : List (ℕ × R)}
+    {t : StW R}
     (h : ScanInv (C := C) (W := W) hs u K (Q - 50) pre t l) (hQ : 50 ≤ Q) :
     ScanInv (C := C) (W := W) hs u K Q pre (tick 50 t) l :=
   ⟨h.split, h.g.tick 50, h.rel, h.ust, h.pre, h.kb, h.ku, by
     have := h.cost; change t.time + 50 + 65 * pot t (hset G.n t) + 325 * l.length ≤ Q; omega⟩
 
 /-- Inserting a new vertex at `nk`, from a settled `u`. -/
-theorem relax_new {hs : src < G.n} {u v' : Fin G.n} {K Q : ℕ} {pre l : List (ℕ × ℕ)} {t : St}
-    (hC : CtxOK C) (hA : AdjOK C G W) (hI : ScanInv (C := C) (W := W) hs u K Q pre t
+theorem relax_new {hs : src < G.n} {u v' : Fin G.n} {K : R} {Q : ℕ} {pre l : List (ℕ × R)}
+    {t : StW R}
+    (_hC : CtxOK C) (hA : AdjOK C G W) (hI : ScanInv (C := C) (W := W) hs u K Q pre t
       ((((v' : ℕ) + 1), G.weight s(u, v')) :: l))
     (hadj : G.graph.Adj u v') (h0 : t.stat ((v' : ℕ) + 1) = 0) :
     ScanInv (C := C) (W := W) hs u K (Q - 50) (pre ++ [((v' : ℕ) + 1, G.weight s(u, v'))])
@@ -63,10 +68,9 @@ theorem relax_new {hs : src < G.n} {u v' : Fin G.n} {K Q : ℕ} {pre l : List (�
     rcases eq_or_ne x v with rfl | hx
     · rw [hsv]; have := v'.2; simp; omega
     · rw [hst x hx]; simp [hx]
-  have hdu : G.dist ⟨src, hs⟩ v' ≤ (nk : ℕ∞) := by
-    have := dist_edge (s := ⟨src, hs⟩) hadj
-    rw [← hg.settled u hust] at this
-    rw [hnk]; push_cast; exact this
+  have hdu : ∃ p : G.graph.Walk ⟨src, hs⟩ v', wlen G p ≤ nk := by
+    obtain ⟨⟨p, hp⟩, -⟩ := hg.settled u hust
+    exact ⟨p.concat hadj, le_of_eq (by rw [wlen_concat]; exact congrArg (· + _) hp)⟩
   refine ⟨by rw [hsp]; simp, ⟨fun x => ?_, fun x hx => ?_, fun x hx0 hx => ?_, fun x hx => ?_,
     fun x hx => ?_, ?_, by rw [hset']; exact hH, fun h => absurd h (by rw [hset']; simp)⟩,
     fun a b hab ha hadj' => ?_, by rw [hst _ huv]; exact hust, fun p hp => ?_, fun x hx => ?_,
@@ -102,15 +106,17 @@ theorem relax_new {hs : src < G.n} {u v' : Fin G.n} {K Q : ℕ} {pre l : List (�
       have hpv : p.1 ≠ v := by intro h; rw [h] at h1; exact h1 h0
       rw [hst _ hpv, hke _ hpv, hke _ huv]; exact ⟨h1, h2⟩
     · simp only [List.mem_singleton] at hp; subst hp
-      simp only; rw [hsv, hkv, hke _ huv]; omega
+      simp only; rw [hsv, hkv, hke _ huv]; exact ⟨one_ne_zero, fun _ => le_rfl⟩
   · rcases eq_or_ne x v with rfl | hxv
     · rw [hkv]
-      have := hA.wmax ((u : ℕ) + 1) (v, G.weight s(u, v')) (by rw [hsp]; simp); simp only at this; omega
+      have := hA.wmax ((u : ℕ) + 1) (v, G.weight s(u, v')) (by rw [hsp]; simp)
+      exact (add_le_add le_rfl this).trans hku
     · rw [hst x hxv] at hx; rw [hke x hxv]; exact hkb x hx
   · rw [hset', hpot, htime]; simp only [List.length_cons] at hcost; omega
 
 /-- Lowering the key of a vertex in the heap to `nk`, from a settled `u`. -/
-theorem relax_dec {hs : src < G.n} {u v' : Fin G.n} {K Q : ℕ} {pre l : List (ℕ × ℕ)} {t : St}
+theorem relax_dec {hs : src < G.n} {u v' : Fin G.n} {K : R} {Q : ℕ} {pre l : List (ℕ × R)}
+    {t : StW R}
     (hC : CtxOK C) (hA : AdjOK C G W) (hI : ScanInv (C := C) (W := W) hs u K Q pre t
       ((((v' : ℕ) + 1), G.weight s(u, v')) :: l))
     (hadj : G.graph.Adj u v') (h1 : t.stat ((v' : ℕ) + 1) = 1)
@@ -131,10 +137,9 @@ theorem relax_dec {hs : src < G.n} {u v' : Fin G.n} {K Q : ℕ} {pre l : List (�
   have hkv : t'.key v = nk := by rw [hkey, update_self]
   have huv : (u : ℕ) + 1 ≠ v := by intro h; rw [h] at hust; omega
   have hset' : hset G.n t' = hset G.n t := by simp only [hset, hstat]
-  have hdu : G.dist ⟨src, hs⟩ v' ≤ (nk : ℕ∞) := by
-    have := dist_edge (s := ⟨src, hs⟩) hadj
-    rw [← hg.settled u hust] at this
-    rw [hnk]; push_cast; exact this
+  have hdu : ∃ p : G.graph.Walk ⟨src, hs⟩ v', wlen G p ≤ nk := by
+    obtain ⟨⟨p, hp⟩, -⟩ := hg.settled u hust
+    exact ⟨p.concat hadj, le_of_eq (by rw [wlen_concat]; exact congrArg (· + _) hp)⟩
   refine ⟨by rw [hsp]; simp, ⟨fun x => by rw [hstat]; exact hg.statle x,
     fun x hx => by rw [hstat] at hx; exact hg.range x hx, fun x hx0 hx => ?_, fun x hx => ?_,
     fun x hx => ?_, ?_, by rw [hset']; exact hH,
@@ -155,7 +160,8 @@ theorem relax_dec {hs : src < G.n} {u v' : Fin G.n} {K Q : ℕ} {pre l : List (�
       subst hx'; rw [hkv]; exact hdu
     · rw [hke _ hxv]; exact hg.upper x hx
   · have hsv' : src + 1 ≠ v := by
-      intro h; have := hg.source.2; rw [h] at this; omega
+      intro h; have := hg.source.2; rw [h] at this; rw [this] at hlt
+      exact lt_irrefl _ (zero_le.trans_lt hlt)
     rw [hstat, hke _ hsv']; exact hg.source
   · rw [hstat] at ha ⊢
     obtain ⟨h1', h2⟩ := hrel a b hab ha hadj'
@@ -163,7 +169,7 @@ theorem relax_dec {hs : src < G.n} {u v' : Fin G.n} {K Q : ℕ} {pre l : List (�
     refine ⟨h1', fun hb => ?_⟩
     rw [hke _ hav]
     rcases eq_or_ne ((b : ℕ) + 1) v with h | hbv
-    · rw [h, hkv]; have := h2 hb; rw [h] at this; omega
+    · rw [h, hkv]; have := h2 hb; rw [h] at this; exact (hlt.trans_le this).le
     · rw [hke _ hbv]; exact h2 hb
   · rw [hstat]
     rcases List.mem_append.1 hp with hp | hp
@@ -171,20 +177,22 @@ theorem relax_dec {hs : src < G.n} {u v' : Fin G.n} {K Q : ℕ} {pre l : List (�
       refine ⟨h1', fun hb => ?_⟩
       rw [hke _ huv]
       rcases eq_or_ne p.1 v with h | hpv
-      · rw [h, hkv]; have := h2 hb; rw [h] at this; omega
+      · rw [h, hkv]; have := h2 hb; rw [h] at this; exact (hlt.trans_le this).le
       · rw [hke _ hpv]; exact h2 hb
     · simp only [List.mem_singleton] at hp; subst hp
-      simp only; rw [hkv, hke _ huv]; omega
+      simp only; rw [hkv, hke _ huv]; exact ⟨by omega, fun _ => le_rfl⟩
   · rw [hstat] at hx
     rcases eq_or_ne x v with rfl | hxv
     · rw [hkv]
-      have := hA.wmax ((u : ℕ) + 1) (v, G.weight s(u, v')) (by rw [hsp]; simp); simp only at this; omega
+      have := hA.wmax ((u : ℕ) + 1) (v, G.weight s(u, v')) (by rw [hsp]; simp)
+      exact (add_le_add le_rfl this).trans hku
     · rw [hke x hxv]; exact hkb x hx
   · rw [hset']; simp only [List.length_cons] at hcost; omega
 
+omit [CanonicallyOrderedAdd R] in
 /-- No change to the state: the edge is already relaxed. -/
-theorem relax_keep {hs : src < G.n} {u : Fin G.n} {K Q : ℕ} {pre l : List (ℕ × ℕ)} {t : St}
-    {p : ℕ × ℕ} (hI : ScanInv (C := C) (W := W) hs u K Q pre t (p :: l))
+theorem relax_keep {hs : src < G.n} {u : Fin G.n} {K : R} {Q : ℕ} {pre l : List (ℕ × R)}
+    {t : StW R} {p : ℕ × R} (hI : ScanInv (C := C) (W := W) hs u K Q pre t (p :: l))
     (hp : t.stat p.1 ≠ 0 ∧ (t.stat p.1 = 1 → t.key p.1 ≤ t.key ((u : ℕ) + 1) + p.2)) :
     ScanInv (C := C) (W := W) hs u K (Q - 50) (pre ++ [p]) t l := by
   obtain ⟨hsp, hg, hrel, hust, hpre, hkb, hku, hcost⟩ := hI
