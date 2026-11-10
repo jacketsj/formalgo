@@ -1,9 +1,9 @@
 # Formalgo (Formalized Algorithms)
 This library is for formalizing algorithmic results. Some examples of statements that have formalized in this library:
 
-- There exists an algorithm running on integer ram that solves sorting of n integers in $O(n \log n)$ time.
-- There exists an algorithm running on (transdichotomous) word ram that solves the single-source shortest-path problem on n-vertex m-edge (connected, undirected) graphs in $O(m+n\log n)$ time.
-- There exists an algorithm running on real ram that solves the all-pairs shortest-path problem on n-vertex (connected, undirected) graphs in $O(n^3)$ time.
+- There exists an algorithm running on integer ram that solves sorting of $n$ integers in $O(n \log n)$ time.
+- There exists an algorithm running on (transdichotomous) word ram that solves the single-source shortest-path problem on $n$-vertex $m$-edge (connected, undirected) graphs in $O(m+n\log n)$ time.
+- There exists an algorithm running on real ram that solves the all-pairs shortest-path problem on $n$-vertex (connected, undirected) graphs in $O(n^3)$ time.
 
 These statements use careful definitions of these computational models.
 As an example, here is the first statement, formalized:
@@ -20,7 +20,7 @@ theorem sortsInNLogN_integerRAM :
 
 ## Principles
 
-This entire library is written with the goal of having easily-aduitable definitions and statements. It does *not* make proving these statements easy, since LLMs can now be used to prove such (challenging) statements.
+This library is written with the goal of having easily-aduitable definitions and statements. It does *not* make proving these statements easy, since LLMs can now be used to prove such (challenging) statements.
 
 ## Core Overview
 
@@ -55,7 +55,7 @@ The third abstraction layer is used to define an algorithm (something that takes
 While LLMs have been helpful to the development of this repository, everything in `Formalgo/Core/` especially has been worked on very carefully. The goal is to have a human-verified and approved way of proving algorithmic statements. Unchecked LLM code (which is not permitted in `Formalgo/Core`) is very clearly marked.
 This README.md is entirely human-written.
 
-The proofs of our many statements in `Algorithms` are LLM-generated. The corresponding statements can be found in the `Formalgo/Algorithms` directory. Within the Algorithms directory each problem has its own sub-directory and its statement is at the top level in Statement.lean. This file is human verified. For each problem there is a subdirectory titled *LLM-Unchecked* that contains the proofs of the statements. As the name suggests, these are not carefully checked.
+The proofs of our many statements in `Algorithms` are LLM-generated. The corresponding statements can be found in the `Formalgo/Algorithms` directory. Within `Formalgo/Algorithms/` each problem has its own sub-directory and its statement is at the top level in `Statement.lean`. This file is human verified. For each problem there is a subdirectory titled *LLM-Unchecked* containing the proof of the corresponding statement. As the name suggests, these are not carefully checked.
 
 
 ## Credits
