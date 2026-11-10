@@ -1,0 +1,394 @@
+import Mathlib.Data.Fintype.Basic
+import Formalgo.Core.TDWordRAM
+
+/-!
+# Structured commands for the word RAM
+
+LLM-generated; not checked by a human.
+
+Commands over a memory of natural numbers, compiled to word RAM programs. `Exec` gives their
+meaning with exact costs, and `Exec.run` shows that compiled programs follow it.
+-/
+
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
+
+/-- The operations used. -/
+abbrev ops : List WordRAM.Operation := [.less, .add, .sub]
+
+/-- An operation used. -/
+abbrev Op := {operation // operation ∈ ops}
+
+/-- Instructions over natural numbers. -/
+abbrev NInstr := RAM.Instruction ℕ ℕ (RAM.Arithmetic ℕ Op)
+
+/-- Instructions with `w`-bit words. -/
+abbrev WInstr (w : ℕ) := RAM.Instruction (BitVec w) (BitVec w) (RAM.Arithmetic (BitVec w) Op)
+
+/-- An instruction over natural numbers, with `w`-bit words. -/
+def NInstr.toWord (w : ℕ) (instruction : NInstr) : WInstr w :=
+  instruction.map (BitVec.ofNat w) (BitVec.ofNat w) (RAM.Arithmetic.map (BitVec.ofNat w))
+
+/-- A line of code: an instruction, and the next line for each outcome. -/
+structure Line where
+  /-- The instruction. -/
+  instr : NInstr
+  /-- The next line if the outcome is `true`. -/
+  onTrue : ℕ
+  /-- The next line if the outcome is `false`. -/
+  onFalse : ℕ
+
+/-- A memory of natural numbers. -/
+abbrev Mem := ℕ → ℕ
+
+/-- Structured commands. -/
+inductive Cmd
+  | const (d v : ℕ)
+  | copy (d s : ℕ)
+  | load (d p : ℕ)
+  | store (p s : ℕ)
+  | add (d l r : ℕ)
+  | sub (d l r : ℕ)
+  | less (d l r : ℕ)
+  | seq (a b : Cmd)
+  /-- If `M[l] = M[r]`. -/
+  | ite (l r : ℕ) (t e : Cmd)
+  /-- While `M[l] = M[r]`. -/
+  | loop (l r : ℕ) (body : Cmd)
+
+namespace Cmd
+
+/-- Addition. -/
+def addOp : Op := ⟨.add, by simp [ops]⟩
+/-- Subtraction. -/
+def subOp : Op := ⟨.sub, by simp [ops]⟩
+/-- Comparison. -/
+def lessOp : Op := ⟨.less, by simp [ops]⟩
+
+/-- A line that jumps to `target`. -/
+def jump (target : ℕ) : Line := ⟨.extension (.equal 0 0), target, target⟩
+
+/-- The number of lines of a command. -/
+def size : Cmd → ℕ
+  | seq a b => a.size + b.size
+  | ite _ _ t e => t.size + e.size + 2
+  | loop _ _ body => body.size + 2
+  | _ => 1
+
+/-- The lines of a command starting at line `s`. -/
+def compile : Cmd → ℕ → List Line
+  | const d v, s => [⟨.const d v, s + 1, s + 1⟩]
+  | copy d x, s => [⟨.copy d x, s + 1, s + 1⟩]
+  | load d p, s => [⟨.load d p, s + 1, s + 1⟩]
+  | store p x, s => [⟨.store p x, s + 1, s + 1⟩]
+  | add d l r, s => [⟨.extension (.apply addOp d l r), s + 1, s + 1⟩]
+  | sub d l r, s => [⟨.extension (.apply subOp d l r), s + 1, s + 1⟩]
+  | less d l r, s => [⟨.extension (.apply lessOp d l r), s + 1, s + 1⟩]
+  | seq a b, s => a.compile s ++ b.compile (s + a.size)
+  | ite l r t e, s => ⟨.extension (.equal l r), s + 1, s + t.size + 2⟩ ::
+      (t.compile (s + 1) ++ jump (s + t.size + e.size + 2) :: e.compile (s + t.size + 2))
+  | loop l r body, s => ⟨.extension (.equal l r), s + 1, s + body.size + 2⟩ ::
+      (body.compile (s + 1) ++ [jump s])
+
+theorem length_compile (c : Cmd) (s : ℕ) : (c.compile s).length = c.size := by
+  induction c generalizing s <;> simp_all [compile, size]; omega
+
+/-- The lines of a closed program: the command, then `halt`. -/
+def lines (c : Cmd) : List Line := c.compile 0 ++ [⟨.halt, 0, 0⟩]
+
+theorem length_lines (c : Cmd) : c.lines.length = c.size + 1 := by
+  simp [lines, length_compile]
+
+end Cmd
+
+/-! ### Programs -/
+
+/-- The program running `lines` with `w`-bit words. -/
+def linesProgram (w : ℕ) (lines : List Line) (h : 0 < lines.length) :
+    Program (Fin lines.length) (WInstr w) Bool where
+  init := ⟨0, h⟩
+  next pc outcome :=
+    ⟨(if outcome then lines[pc].onTrue else lines[pc].onFalse) % lines.length, Nat.mod_lt _ h⟩
+  instruction pc := lines[pc].instr.toWord w
+
+/-- The word RAM semantics with the operations used. -/
+abbrev sem (w : ℕ) := (wordRAM w ops).semantics
+
+/-- A memory of natural numbers agrees with a tape of `w`-bit words. -/
+def Corr {w : ℕ} (m : Mem) (T : Tape (BitVec w) (BitVec w)) : Prop :=
+  ∀ a : BitVec w, (T.read a).toNat = m a.toNat
+
+/-- `ls` sits in `lines` from line `s`. -/
+def At (lines : List Line) (s : ℕ) (ls : List Line) : Prop :=
+  ∀ i < ls.length, lines[s + i]? = ls[i]?
+
+/-- Big-step semantics of commands, with exact costs, for words below `B`. -/
+inductive Exec (B : ℕ) : Cmd → Mem → ℕ → Mem → Prop
+  | const {m d v} : d < B → v < B → Exec B (.const d v) m 1 (Function.update m d v)
+  | copy {m d s} : d < B → s < B → Exec B (.copy d s) m 1 (Function.update m d (m s))
+  | load {m d p} : d < B → p < B → Exec B (.load d p) m 1 (Function.update m d (m (m p)))
+  | store {m p s} : p < B → s < B → Exec B (.store p s) m 1 (Function.update m (m p) (m s))
+  | add {m d l r} : d < B → l < B → r < B → m l + m r < B →
+      Exec B (.add d l r) m 1 (Function.update m d (m l + m r))
+  | sub {m d l r} : d < B → l < B → r < B → m r ≤ m l →
+      Exec B (.sub d l r) m 1 (Function.update m d (m l - m r))
+  | less {m d l r} : d < B → l < B → r < B →
+      Exec B (.less d l r) m 1 (Function.update m d (if m l < m r then 1 else 0))
+  | seq {a b m k₁ m₁ k₂ m₂} : Exec B a m k₁ m₁ → Exec B b m₁ k₂ m₂ →
+      Exec B (.seq a b) m (k₁ + k₂) m₂
+  | iteTrue {l r t e m k m'} : l < B → r < B → m l = m r → Exec B t m k m' →
+      Exec B (.ite l r t e) m (k + 2) m'
+  | iteFalse {l r t e m k m'} : l < B → r < B → m l ≠ m r → Exec B e m k m' →
+      Exec B (.ite l r t e) m (k + 1) m'
+  | loopTrue {l r body m k₁ m₁ k₂ m₂} : l < B → r < B → m l = m r → Exec B body m k₁ m₁ →
+      Exec B (.loop l r body) m₁ k₂ m₂ → Exec B (.loop l r body) m (k₁ + k₂ + 2) m₂
+  | loopFalse {l r body m} : l < B → r < B → m l ≠ m r → Exec B (.loop l r body) m 1 m
+
+/-! ### Runs -/
+
+section Run
+
+variable {PC Instruction Address Value : Type*} [Fintype PC]
+  {program : Program PC Instruction Bool} {semantics : Semantics Instruction Bool Address Value}
+
+theorem run_succ_of_step {k : ℕ} {state state' : Program.State PC Address Value}
+    (h : program.step semantics state = .running state') :
+    program.run semantics (k + 1) state = program.run semantics k state' := by
+  simp [Program.run, h]
+
+theorem run_add_of_running {a b : ℕ} {state state' : Program.State PC Address Value}
+    (h : program.run semantics a state = .running state') :
+    program.run semantics (a + b) state = program.run semantics b state' := by
+  induction a generalizing state with
+  | zero => simp_all [Program.run]
+  | succ a ih =>
+    rw [show a + 1 + b = (a + b) + 1 by omega]
+    simp only [Program.run] at h ⊢
+    cases hs : program.step semantics state with
+    | running next => rw [hs] at h; exact ih h
+    | halted final => rw [hs] at h; simp at h
+
+theorem run_halted_of_le {a b : ℕ} {state final : Program.State PC Address Value}
+    (h : program.run semantics a state = .halted final) (hab : a ≤ b) :
+    program.run semantics b state = .halted final := by
+  induction a generalizing state b with
+  | zero => simp [Program.run] at h
+  | succ a ih =>
+    obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+    simp only [Program.run] at h ⊢
+    cases hs : program.step semantics state with
+    | running next => rw [hs] at h; exact ih h (by omega)
+    | halted final' => rw [hs] at h; exact h
+
+end Run
+
+/-! ### Correspondence -/
+
+section Corr
+
+variable {w : ℕ} {m : Mem} {T : Tape (BitVec w) (BitVec w)}
+
+theorem Corr.write (hT : Corr m T) {d v : ℕ} (hd : d < 2 ^ w) (x : BitVec w) (hx : x.toNat = v) :
+    Corr (Function.update m d v) (T.write (BitVec.ofNat w d) x) := by
+  intro a
+  simp only [Tape.write, Function.update_apply]
+  by_cases ha : a = BitVec.ofNat w d
+  · subst ha; simp [hx, Nat.mod_eq_of_lt hd]
+  · have : a.toNat ≠ d := by
+      intro h; apply ha; apply BitVec.eq_of_toNat_eq; simp [h, Nat.mod_eq_of_lt hd]
+    simp [ha, this, hT a]
+
+theorem Corr.read (hT : Corr m T) {a : ℕ} (ha : a < 2 ^ w) :
+    (T.read (BitVec.ofNat w a)).toNat = m a := by
+  rw [hT]; simp [Nat.mod_eq_of_lt ha]
+
+theorem Corr.lt (hT : Corr m T) {a : ℕ} (ha : a < 2 ^ w) : m a < 2 ^ w := by
+  rw [← hT.read ha]; exact BitVec.isLt _
+
+end Corr
+
+/-! ### Compiled commands follow `Exec` -/
+
+theorem At.append {lines : List Line} {s : ℕ} {a b : List Line} (h : At lines s (a ++ b)) :
+    At lines s a ∧ At lines (s + a.length) b := by
+  constructor
+  · intro i hi
+    have := h i (by simp; omega)
+    rw [this, List.getElem?_append_left hi]
+  · intro i hi
+    have := h (a.length + i) (by simp; omega)
+    rw [← Nat.add_assoc] at this
+    rw [this, List.getElem?_append_right (by omega)]
+    simp
+
+theorem At.cons {lines : List Line} {s : ℕ} {x : Line} {b : List Line} (h : At lines s (x :: b)) :
+    lines[s]? = some x ∧ At lines (s + 1) b := by
+  constructor
+  · simpa using h 0 (by simp)
+  · intro i hi
+    have := h (i + 1) (by simp; omega)
+    rw [show s + (i + 1) = s + 1 + i by omega] at this
+    simpa using this
+
+section Exec
+
+variable {w : ℕ} {lines : List Line} {hlines : 0 < lines.length}
+
+/-- One step on a line holding a non-halting instruction. -/
+theorem run_line {T T' : Tape (BitVec w) (BitVec w)} {pc : Fin lines.length} {line : Line}
+    {s : ℕ} (hpc : pc.val = s) (hline : lines[s]? = some line) {outcome : Bool}
+    (hexec : (sem w).exec (line.instr.toWord w) T = (some outcome, T')) {target : ℕ}
+    (htarget : (if outcome then line.onTrue else line.onFalse) = target)
+    (ht : target < lines.length) :
+    (linesProgram w lines hlines).run (sem w) 1 ⟨pc, T⟩ = .running ⟨⟨target, ht⟩, T'⟩ := by
+  subst hpc
+  have hl : lines[pc.val] = line := by
+    rw [List.getElem?_eq_getElem pc.isLt] at hline; exact Option.some.inj hline
+  simp only [Program.run, Program.step, linesProgram, Fin.getElem_fin, hl, hexec]
+  simp only [htarget, Nat.mod_eq_of_lt ht]
+
+/-- One step on a line holding a primitive command. -/
+theorem run_prim {T T' : Tape (BitVec w) (BitVec w)} {pc : Fin lines.length} {s : ℕ}
+    {i : NInstr} (hpc : pc.val = s) (hline : lines[s]? = some ⟨i, s + 1, s + 1⟩)
+    (hexec : (sem w).exec (i.toWord w) T = (some true, T')) (ht : s + 1 < lines.length) :
+    (linesProgram w lines hlines).run (sem w) 1 ⟨pc, T⟩ = .running ⟨⟨s + 1, ht⟩, T'⟩ :=
+  run_line hpc hline hexec (by simp) ht
+
+theorem toNat_one_of_pos (hw : 0 < w) : (1 : BitVec w).toNat = 1 := BitVec.toNat_one hw
+
+theorem exec_equal {T : Tape (BitVec w) (BitVec w)} {m : Mem} (hT : Corr m T) {l r : ℕ}
+    (hl : l < 2 ^ w) (hr : r < 2 ^ w) :
+    (sem w).exec ((Line.instr ⟨.extension (.equal l r), 0, 0⟩).toWord w) T =
+      (some (decide (m l = m r)), T) := by
+  simp [NInstr.toWord, RAM.Instruction.map, RAM.Arithmetic.map, RAM.semantics, wordRAM,
+    RAM.arithmetic, BitVec.toNat_eq, hT.read hl, hT.read hr]
+
+/-- A compiled command follows `Exec`. -/
+theorem Exec.run (hw : 0 < w) {c : Cmd} {m : Mem} {k : ℕ} {m' : Mem}
+    (hE : Exec (2 ^ w) c m k m') :
+    ∀ {s : ℕ} (_hat : At lines s (c.compile s)) (hlen : s + c.size < lines.length)
+      {T : Tape (BitVec w) (BitVec w)} (_hT : Corr m T) {pc : Fin lines.length} (_hpc : pc.val = s),
+      ∃ T', (linesProgram w lines hlines).run (sem w) k ⟨pc, T⟩ =
+        .running ⟨⟨s + c.size, hlen⟩, T'⟩ ∧ Corr m' T' := by
+  have h2 : 1 < 2 ^ w := Nat.one_lt_two_pow (by omega)
+  induction hE with
+  | @const m d v hd hv =>
+    intro s hat hlen T hT pc hpc
+    have hline := (hat.cons).1
+    exact ⟨T.write (BitVec.ofNat w d) (BitVec.ofNat w v), run_prim hpc hline
+      (by simp [NInstr.toWord, RAM.Instruction.map, RAM.semantics]) hlen,
+      hT.write hd _ (by simp [Nat.mod_eq_of_lt hv])⟩
+  | @copy m d x hd hx =>
+    intro s hat hlen T hT pc hpc
+    have hline := (hat.cons).1
+    exact ⟨T.write (BitVec.ofNat w d) (T.read (BitVec.ofNat w x)), run_prim hpc hline
+      (by simp [NInstr.toWord, RAM.Instruction.map, RAM.semantics]) hlen,
+      hT.write hd _ (hT.read hx)⟩
+  | @load m d p hd hp =>
+    intro s hat hlen T hT pc hpc
+    have hline := (hat.cons).1
+    exact ⟨T.write (BitVec.ofNat w d) (T.read (T.read (BitVec.ofNat w p))), run_prim hpc hline
+      (by simp [NInstr.toWord, RAM.Instruction.map, RAM.semantics, wordRAM]) hlen,
+      hT.write hd _ (by rw [hT, hT.read hp])⟩
+  | @store m p x hp hx =>
+    intro s hat hlen T hT pc hpc
+    have hline := (hat.cons).1
+    refine ⟨T.write (T.read (BitVec.ofNat w p)) (T.read (BitVec.ofNat w x)), run_prim hpc hline
+      (by simp [NInstr.toWord, RAM.Instruction.map, RAM.semantics, wordRAM]) hlen, ?_⟩
+    have hmp := hT.read hp
+    have hlt : m p < 2 ^ w := hT.lt hp
+    have := hT.write hlt (T.read (BitVec.ofNat w x)) (hT.read hx)
+    have he : BitVec.ofNat w (m p) = T.read (BitVec.ofNat w p) := by
+      apply BitVec.eq_of_toNat_eq; simp [hmp, Nat.mod_eq_of_lt hlt]
+    rwa [he] at this
+  | @add m d l r hd hl hr hsum =>
+    intro s hat hlen T hT pc hpc
+    have hline := (hat.cons).1
+    exact ⟨T.write (BitVec.ofNat w d) (T.read (BitVec.ofNat w l) + T.read (BitVec.ofNat w r)),
+      run_prim hpc hline (by simp [NInstr.toWord, RAM.Instruction.map, RAM.Arithmetic.map,
+      RAM.semantics, wordRAM, RAM.arithmetic, Cmd.addOp]) hlen,
+      hT.write hd _ (by rw [BitVec.toNat_add, hT.read hl, hT.read hr, Nat.mod_eq_of_lt hsum])⟩
+  | @sub m d l r hd hl hr hle =>
+    intro s hat hlen T hT pc hpc
+    have hline := (hat.cons).1
+    refine ⟨T.write (BitVec.ofNat w d) (T.read (BitVec.ofNat w l) - T.read (BitVec.ofNat w r)),
+      run_prim hpc hline (by simp [NInstr.toWord, RAM.Instruction.map, RAM.Arithmetic.map,
+      RAM.semantics, wordRAM, RAM.arithmetic, Cmd.subOp]) hlen, hT.write hd _ ?_⟩
+    have hl' := hT.lt hl
+    rw [BitVec.toNat_sub, hT.read hl, hT.read hr,
+      show 2 ^ w - m r + m l = (m l - m r) + 2 ^ w by omega, Nat.add_mod_right,
+      Nat.mod_eq_of_lt (by omega)]
+  | @less m d l r hd hl hr =>
+    intro s hat hlen T hT pc hpc
+    have hline := (hat.cons).1
+    refine ⟨T.write (BitVec.ofNat w d)
+      (if T.read (BitVec.ofNat w l) < T.read (BitVec.ofNat w r) then 1 else 0),
+      run_prim hpc hline (by simp [NInstr.toWord, RAM.Instruction.map, RAM.Arithmetic.map,
+      RAM.semantics, wordRAM, RAM.arithmetic, Cmd.lessOp]) hlen, hT.write hd _ ?_⟩
+    simp only [BitVec.lt_def, hT.read hl, hT.read hr]
+    split <;> simp [hw]
+  | @seq a b m k₁ m₁ k₂ m₂ _ _ iha ihb =>
+    intro s hat hlen T hT pc hpc
+    obtain ⟨hata, hatb⟩ := At.append hat
+    rw [Cmd.length_compile] at hatb
+    simp only [Cmd.size] at hlen
+    obtain ⟨T₁, h₁, hT₁⟩ := iha hata (by omega) hT hpc
+    obtain ⟨T₂, h₂, hT₂⟩ := ihb hatb (by omega) hT₁ (pc := ⟨s + a.size, by omega⟩) rfl
+    refine ⟨T₂, ?_, hT₂⟩
+    rw [run_add_of_running h₁, h₂]
+    simp [Cmd.size, Nat.add_assoc]
+  | @iteTrue l r t e m k m' hl hr heq _ iht =>
+    intro s hat hlen T hT pc hpc
+    obtain ⟨htest, hrest⟩ := At.cons hat
+    obtain ⟨hatt, hrest⟩ := At.append hrest
+    obtain ⟨hjump, _⟩ := At.cons hrest
+    rw [Cmd.length_compile] at hjump
+    simp only [Cmd.size] at hlen
+    have h0 := run_line (hlines := hlines) hpc htest (exec_equal hT hl hr) (target := s + 1)
+      (by simp [heq]) (by omega)
+    obtain ⟨T₁, h₁, hT₁⟩ := iht hatt (by omega) hT (pc := ⟨s + 1, by omega⟩) rfl
+    have h₂ := run_line (hlines := hlines) (pc := ⟨s + 1 + t.size, by omega⟩) rfl hjump
+      (exec_equal hT₁ (show 0 < 2 ^ w by omega) (show 0 < 2 ^ w by omega))
+      (target := s + (t.size + e.size + 2)) (by simp [Cmd.jump]; omega) (by omega)
+    refine ⟨T₁, ?_, hT₁⟩
+    rw [show k + 2 = 1 + (k + 1) by omega, run_add_of_running h0, run_add_of_running h₁, h₂]
+    rfl
+  | @iteFalse l r t e m k m' hl hr hne _ ihe =>
+    intro s hat hlen T hT pc hpc
+    obtain ⟨htest, hrest⟩ := At.cons hat
+    obtain ⟨_, hrest⟩ := At.append hrest
+    obtain ⟨_, hate⟩ := At.cons hrest
+    rw [Cmd.length_compile, show s + 1 + t.size + 1 = s + t.size + 2 by omega] at hate
+    simp only [Cmd.size] at hlen
+    have h0 := run_line (hlines := hlines) hpc htest (exec_equal hT hl hr) (target := s + t.size + 2)
+      (by simp [hne]) (by omega)
+    obtain ⟨T₁, h₁, hT₁⟩ := ihe hate (by omega) hT (pc := ⟨s + t.size + 2, by omega⟩) rfl
+    refine ⟨T₁, ?_, hT₁⟩
+    rw [show k + 1 = 1 + k by omega, run_add_of_running h0, h₁]
+    simp [Cmd.size]; omega
+  | @loopTrue l r body m k₁ m₁ k₂ m₂ hl hr heq _ _ ihb ihl =>
+    intro s hat hlen T hT pc hpc
+    have hat' := hat
+    obtain ⟨htest, hrest⟩ := At.cons hat
+    obtain ⟨hatb, hrest⟩ := At.append hrest
+    obtain ⟨hjump, _⟩ := At.cons hrest
+    rw [Cmd.length_compile] at hjump
+    simp only [Cmd.size] at hlen
+    have h0 := run_line (hlines := hlines) hpc htest (exec_equal hT hl hr) (target := s + 1)
+      (by simp [heq]) (by omega)
+    obtain ⟨T₁, h₁, hT₁⟩ := ihb hatb (by omega) hT (pc := ⟨s + 1, by omega⟩) rfl
+    have h₂ := run_line (hlines := hlines) (pc := ⟨s + 1 + body.size, by omega⟩) rfl hjump
+      (exec_equal hT₁ (show 0 < 2 ^ w by omega) (show 0 < 2 ^ w by omega))
+      (target := s) (by simp [Cmd.jump]) (by omega)
+    obtain ⟨T₂, h₃, hT₂⟩ := ihl hat' (by simpa [Cmd.size] using hlen) hT₁ (pc := ⟨s, by omega⟩) rfl
+    refine ⟨T₂, ?_, hT₂⟩
+    rw [show k₁ + k₂ + 2 = 1 + (k₁ + (1 + k₂)) by omega, run_add_of_running h0,
+      run_add_of_running h₁, run_add_of_running h₂, h₃]
+  | @loopFalse l r body m hl hr hne =>
+    intro s hat hlen T hT pc hpc
+    obtain ⟨htest, _⟩ := At.cons hat
+    exact ⟨T, run_line (hlines := hlines) hpc htest (exec_equal hT hl hr)
+      (by simp [hne, Cmd.size]; omega) hlen, hT⟩
+
+end Exec
+
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

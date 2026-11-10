@@ -1,0 +1,122 @@
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.Machine.Cmd
+
+/-!
+# Reasoning about commands
+
+LLM-generated; not checked by a human.
+
+`eval` runs loop-free commands directly; loops are handled with an invariant and a measure.
+-/
+
+namespace Formalgo.Algorithms.ShortestPaths.LLMUnchecked
+
+open Function
+
+namespace Cmd
+
+/-- Run a loop-free command for words below `B`, with its cost. -/
+def eval (B : ℕ) : Cmd → Mem → Option (Mem × ℕ)
+  | const d v, m => if d < B ∧ v < B then some (update m d v, 1) else none
+  | copy d s, m => if d < B ∧ s < B then some (update m d (m s), 1) else none
+  | load d p, m => if d < B ∧ p < B then some (update m d (m (m p)), 1) else none
+  | store p s, m => if p < B ∧ s < B then some (update m (m p) (m s), 1) else none
+  | add d l r, m =>
+    if d < B ∧ l < B ∧ r < B ∧ m l + m r < B then some (update m d (m l + m r), 1) else none
+  | sub d l r, m =>
+    if d < B ∧ l < B ∧ r < B ∧ m r ≤ m l then some (update m d (m l - m r), 1) else none
+  | less d l r, m =>
+    if d < B ∧ l < B ∧ r < B then some (update m d (if m l < m r then 1 else 0), 1) else none
+  | seq a b, m => match eval B a m with
+    | some (m₁, k₁) => match eval B b m₁ with
+      | some (m₂, k₂) => some (m₂, k₁ + k₂)
+      | none => none
+    | none => none
+  | ite l r t e, m => if l < B ∧ r < B then
+      if m l = m r then (match eval B t m with | some (m', k) => some (m', k + 2) | none => none)
+      else (match eval B e m with | some (m', k) => some (m', k + 1) | none => none)
+    else none
+  | loop _ _ _, _ => none
+
+theorem eval_sound {B : ℕ} {c : Cmd} {m m' : Mem} {k : ℕ} (h : eval B c m = some (m', k)) :
+    Exec B c m k m' := by
+  induction c generalizing m m' k with
+  | const d v =>
+    simp only [eval] at h; split at h
+    · next hc => cases h; exact .const hc.1 hc.2
+    · cases h
+  | copy d s =>
+    simp only [eval] at h; split at h
+    · next hc => cases h; exact .copy hc.1 hc.2
+    · cases h
+  | load d p =>
+    simp only [eval] at h; split at h
+    · next hc => cases h; exact .load hc.1 hc.2
+    · cases h
+  | store p s =>
+    simp only [eval] at h; split at h
+    · next hc => cases h; exact .store hc.1 hc.2
+    · cases h
+  | add d l r =>
+    simp only [eval] at h; split at h
+    · next hc => cases h; exact .add hc.1 hc.2.1 hc.2.2.1 hc.2.2.2
+    · cases h
+  | sub d l r =>
+    simp only [eval] at h; split at h
+    · next hc => cases h; exact .sub hc.1 hc.2.1 hc.2.2.1 hc.2.2.2
+    · cases h
+  | less d l r =>
+    simp only [eval] at h; split at h
+    · next hc => cases h; exact .less hc.1 hc.2.1 hc.2.2
+    · cases h
+  | seq a b iha ihb =>
+    simp only [eval] at h
+    split at h
+    · next m₁ k₁ h₁ =>
+      split at h
+      · next m₂ k₂ h₂ => cases h; exact .seq (iha h₁) (ihb h₂)
+      · cases h
+    · cases h
+  | ite l r t e iht ihe =>
+    simp only [eval] at h
+    split at h
+    · next hc =>
+      split at h
+      · next heq =>
+        split at h
+        · next m₁ k₁ h₁ => cases h; exact .iteTrue hc.1 hc.2 heq (iht h₁)
+        · cases h
+      · next hne =>
+        split at h
+        · next m₁ k₁ h₁ => cases h; exact .iteFalse hc.1 hc.2 hne (ihe h₁)
+        · cases h
+    · cases h
+  | loop => simp [eval] at h
+
+end Cmd
+
+/-- A loop, from an invariant `P` on memories and costs so far, and a decreasing measure. -/
+theorem Exec.loop_of {B l r : ℕ} {body : Cmd} (P : Mem → ℕ → Prop) (μ : Mem → ℕ)
+    (Q : Mem → ℕ → Prop) (hl : l < B) (hr : r < B)
+    (hstep : ∀ m s, P m s → m l = m r →
+      ∃ m' k, Exec B body m k m' ∧ P m' (s + k + 2) ∧ μ m' < μ m)
+    (hexit : ∀ m s, P m s → m l ≠ m r → Q m (s + 1)) :
+    ∀ m s, P m s → ∃ m' k, Exec B (.loop l r body) m k m' ∧ Q m' (s + k) := by
+  intro m
+  induction hμ : μ m using Nat.strong_induction_on generalizing m with
+  | _ n ih =>
+    intro s hP
+    by_cases heq : m l = m r
+    · obtain ⟨m₁, k₁, hb, hP₁, hμ₁⟩ := hstep m s hP heq
+      obtain ⟨m₂, k₂, hl₂, hQ⟩ := ih (μ m₁) (hμ ▸ hμ₁) m₁ rfl _ hP₁
+      exact ⟨m₂, k₁ + k₂ + 2, .loopTrue hl hr heq hb hl₂, by
+        rw [show s + (k₁ + k₂ + 2) = s + k₁ + 2 + k₂ by omega]; exact hQ⟩
+    · exact ⟨m, 1, .loopFalse hl hr heq, hexit m s hP heq⟩
+
+/-- Sequencing, with the cost of the second part depending on the first. -/
+theorem Exec.seq_of {B : ℕ} {a b : Cmd} {m : Mem} (Q : Mem → ℕ → Prop)
+    (ha : ∃ m₁ k₁, Exec B a m k₁ m₁ ∧ ∃ m₂ k₂, Exec B b m₁ k₂ m₂ ∧ Q m₂ (k₁ + k₂)) :
+    ∃ m' k, Exec B (.seq a b) m k m' ∧ Q m' k := by
+  obtain ⟨m₁, k₁, h₁, m₂, k₂, h₂, hQ⟩ := ha
+  exact ⟨m₂, k₁ + k₂, .seq h₁ h₂, hQ⟩
+
+end Formalgo.Algorithms.ShortestPaths.LLMUnchecked

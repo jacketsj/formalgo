@@ -2,6 +2,9 @@ import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Set.Finite.Basic
 import Mathlib.Data.Nat.Find
 import Mathlib.Data.Nat.Log
+import Mathlib.Data.Finite.Prod
+import Mathlib.Data.Prod.Lex
+import Mathlib.Data.Sym.Sym2.Order
 import Formalgo.Core.Tape
 
 /-!
@@ -80,6 +83,18 @@ noncomputable instance set [Finite α] [LinearOrder α] [Code ℕ Value] : Code 
   decode stream :=
     let (positions, stream) : List ℕ × _ := decode stream
     ({a | position a ∈ positions}, stream)
+
+/-- Unordered pairs `s(a, b)` with `a ≤ b`, ordered lexicographically by `(a, b)`. -/
+abbrev sym2LinearOrder (α : Type*) [LinearOrder α] : LinearOrder (Sym2 α) :=
+  LinearOrder.lift' (fun z => toLex (Sym2.sortEquiv z : α × α))
+    fun _ _ h => Sym2.sortEquiv.injective (Subtype.ext (toLex.injective h))
+
+/-- A function on a set of unordered pairs (e.g. on the edges of a graph) is written as with
+`labels`, ordered by `sym2LinearOrder`. -/
+noncomputable instance sym2SetLabels [Finite α] [LinearOrder α] {s : Set (Sym2 α)}
+    [Inhabited β] [Code (List β) Value] : Code (s → β) Value :=
+  letI := sym2LinearOrder α
+  labels
 
 /-- The code that writes data determining each element (`data` is injective), and reads back the
 element with the data read. -/
