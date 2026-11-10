@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Order.Archimedean.Real.Basic
+import Mathlib.Data.NNReal.Defs
 import Formalgo.Core.Code
 import Formalgo.Core.RAM
 
@@ -36,6 +37,11 @@ noncomputable def realRAM (operations : List RealRAM.Operation) :
 noncomputable instance RealRAM.code : Code ℕ ℝ where
   encode n := [n]
   decode stream := (⌊stream 0⌋₊, fun i => stream (i + 1))
+
+/-- A nonnegative real is written as itself. -/
+noncomputable instance RealRAM.nnrealCode : Code NNReal ℝ where
+  encode r := [r]
+  decode stream := ((stream 0).toNNReal, fun i => stream (i + 1))
 
 /-- Real RAM with `<`, `+` and `−`. -/
 noncomputable def RealRAM.withAddSub := realRAM [.less, .add, .sub]

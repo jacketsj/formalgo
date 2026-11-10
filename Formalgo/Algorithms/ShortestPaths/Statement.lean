@@ -22,6 +22,17 @@ def singleSourceShortestPaths (W : Type*) [AddMonoid W] [LE W] :
     G.Connected → ∀ h : source < n, ∃ d : Fin n → W, output = ⟨n, d⟩ ∧
       ∀ v, IsLeast {walkWeight W weight p | p : G.Walk ⟨source, h⟩ v} (d v)
 
+/-- The number of vertices `n`, a graph on `Fin n`, and a weight in `W` on each edge. -/
+abbrev AllPairsInput (W : Type*) := Σ n, Σ G : SimpleGraph (Fin n), G.edgeSet → W
+
+/-- All-pairs shortest paths: if the graph is connected, the weight of a lightest walk between
+each pair of vertices. -/
+def allPairsShortestPaths (W : Type*) [AddMonoid W] [LE W] :
+    IOSpec (AllPairsInput W) (Σ n, Fin n → Fin n → W) where
+  valid := fun ⟨n, G, weight⟩ output =>
+    G.Connected → ∃ d : Fin n → Fin n → W, output = ⟨n, d⟩ ∧
+      ∀ u v, IsLeast {walkWeight W weight p | p : G.Walk u v} (d u v)
+
 /-- A TD word RAM with `<`, `+` and `−` finds single-source shortest paths in `O(E + V log V)`
 steps (Dijkstra's algorithm with a Fibonacci heap). -/
 theorem singleSourceShortestPathsInEPlusVLogV :
