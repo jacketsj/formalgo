@@ -10,7 +10,7 @@ As an example, here is the first statement, formalized:
 
 ```lean4
 def sorting : IOSpec (List ℕ) (List ℕ) where
-  valid input output := output.Perm input ∧ output.Pairwise (· ≤ ·)
+  valid input output := output.Perm input ∧ output.Pairwise (· ≤ ·) /-- Output is a permutation of the input + output is sorted --/
 
 theorem sortsInNLogN_integerRAM :
     ∃ c, IntegerRAM.withAddSub.semantics.SolvableWithin sorting
@@ -53,7 +53,7 @@ The third abstraction layer is used to define an algorithm (something that takes
 
 
 While LLMs have been helpful to the development of this repository, everything in `Formalgo/Core/` especially has been worked on very carefully. The goal is to have a human-verified and approved way of proving algorithmic statements. Unchecked LLM code (which is not permitted in `Formalgo/Core`) is very clearly marked.
-This README.md is entirely human-written.
+This `README.md` is entirely human-written.
 
 The proofs of our many statements in `Algorithms` are LLM-generated. The corresponding statements can be found in the `Formalgo/Algorithms` directory. Within `Formalgo/Algorithms/` each problem has its own sub-directory and its statement is at the top level in `Statement.lean`. This file is human verified. For each problem there is a subdirectory titled `LLM-Unchecked` containing the proof of the corresponding statement. As the name suggests, these are not carefully checked.
 
