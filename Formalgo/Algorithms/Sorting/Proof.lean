@@ -12,7 +12,8 @@ bottom-up merge sort in that language, with its correctness and step bound. The 
 also compile to integer RAM programs, which free the low cells of the input tape themselves, and
 to real RAM programs.
 
-The proof is in `Formalgo/Algorithms/Sorting/LLMUnchecked/`, each module importing the previous (`RealRAM` imports `IntegerRAM`):
+The proof is in `Formalgo/Algorithms/Sorting/LLMUnchecked/`, each module importing the previous
+(`RealRAM` imports `IntegerRAM`):
 * `Commands`: Structured commands for the word RAM.
 * `Tapes`: Tapes of the word RAM.
 * `Reasoning`: Reasoning about commands.
