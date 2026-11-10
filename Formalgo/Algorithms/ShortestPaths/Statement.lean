@@ -1,5 +1,6 @@
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.Proof
 import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.RealRun.RFinal
+import Formalgo.Algorithms.ShortestPaths.LLMUnchecked.AllPairs.Proof
 
 /-!
 # Single-source shortest paths
@@ -49,5 +50,12 @@ theorem singleSourceShortestPathsInEPlusVLogV_realRAM :
     ∃ c, RealRAM.withAddSub.semantics.SolvableWithin (singleSourceShortestPaths ℝ≥0)
       fun ⟨V, G, _⟩ => c * (G.edgeSet.ncard + V * Nat.log 2 V) + c :=
   shortestPaths_realRAM _ fun _ _ _ _ _ h => h
+
+/-- A TD word RAM with `<`, `+` and `−` finds all-pairs shortest paths in `O(V³)` steps
+(the Floyd–Warshall algorithm). -/
+theorem allPairsShortestPathsInV3 :
+    ∃ c, (tdWordRAM [.less, .add, .sub]).SolvableWithin (allPairsShortestPaths ℕ)
+      fun ⟨V, _, _⟩ => c * V ^ 3 + c :=
+  allPairs_wordRAM _ fun _ _ _ _ h => h
 
 end Formalgo.Algorithms.ShortestPaths
